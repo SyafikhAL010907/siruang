@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pilih Gedung Perkuliahan | Reservasi Ruangan UNJ</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="../assets/js/core/tailwind-config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/global.css" />
+  <link rel="stylesheet" href="../assets/css/public/pilih-gedung.css" />
+</head>
+<body class="bg-surface text-ink antialiased" style="font-family:'Inter',system-ui,sans-serif;">
+  <div id="app" v-cloak class="min-h-screen flex flex-col justify-between">
+    <!-- Navbar Otomatis Sesuai Role -->
+    <app-navbar></app-navbar>
+
+    <!-- Konten Utama -->
+    <main class="flex-1 mx-auto max-w-6xl w-full px-4 py-8 sm:py-12">
+      <!-- Breadcrumb -->
+      <nav class="flex items-center text-xs text-muted mb-4 gap-1.5" aria-label="Breadcrumb">
+        <a :href="routes.public.landing" class="hover:text-primary">Beranda</a>
+        <span>/</span>
+        <span class="text-ink font-medium">Pilih Gedung</span>
+      </nav>
+
+      <!-- Header Halaman -->
+      <div class="mb-8 text-center sm:text-left">
+        <h1 class="text-2xl sm:text-3xl font-bold text-ink">Pilih Gedung Perkuliahan</h1>
+        <p class="text-sm text-muted mt-1 max-w-2xl">
+          Silakan pilih gedung untuk meninjau denah 2D interaktif, denah tata letak ruangan per lantai, dan ketersediaan slot kelas.
+        </p>
+      </div>
+
+      <!-- Dua Kartu Besar Gedung -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- 1. GEDUNG L RUMPUN ELEKTRO -->
+        <div
+          class="card p-6 sm:p-8 bg-white border border-border rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between cursor-pointer group hover:border-primary"
+          @click="selectBuilding('L')"
+        >
+          <div>
+            <div class="flex items-start justify-between mb-4">
+              <span class="text-xs font-bold uppercase tracking-wider text-primary bg-primary-soft px-3 py-1.5 rounded-lg">
+                Fakultas Teknik UNJ
+              </span>
+              <div class="w-14 h-14 rounded-2xl bg-primary-soft text-primary flex items-center justify-center font-extrabold text-2xl group-hover:bg-primary group-hover:text-white transition">
+                LE
+              </div>
+            </div>
+
+            <h2 class="text-2xl font-bold text-ink group-hover:text-primary transition mb-2">
+              Gedung L (Rumpun Elektro)
+            </h2>
+            <p class="text-sm text-muted mb-6 leading-relaxed">
+              Gedung perkuliahan Rumpun Teknik Elektro Fakultas Teknik 4 lantai yang mencakup ruang kuliah teori, seminar, dan laboratorium komputer teknik.
+            </p>
+
+            <!-- Informasi Ringkasan -->
+            <div class="grid grid-cols-2 gap-3 mb-6 text-sm">
+              <div class="p-3 bg-surface rounded-xl border border-border">
+                <div class="text-xs text-muted">Jumlah Lantai</div>
+                <div class="text-lg font-bold text-ink mt-0.5">4 Lantai</div>
+              </div>
+              <div class="p-3 bg-surface rounded-xl border border-border">
+                <div class="text-xs text-muted">Total Ruangan</div>
+                <div class="text-lg font-bold text-ink mt-0.5">24 Ruangan</div>
+              </div>
+            </div>
+
+            <!-- Mini Okupansi -->
+            <div class="mb-6">
+              <div class="text-xs font-semibold text-muted mb-2 uppercase tracking-wider">
+                Status Okupansi Jam Ini:
+              </div>
+              <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                <div class="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200">
+                  <div class="font-bold text-emerald-800 text-base">{{ statsL.tersedia }}</div>
+                  <div class="text-emerald-700 text-[11px] font-medium">Tersedia</div>
+                </div>
+                <div class="p-2.5 rounded-lg bg-yellow-50 border border-yellow-200">
+                  <div class="font-bold text-yellow-800 text-base">{{ statsL.sebagian }}</div>
+                  <div class="text-yellow-700 text-[11px] font-medium">Sebagian</div>
+                </div>
+                <div class="p-2.5 rounded-lg bg-red-50 border border-red-200">
+                  <div class="font-bold text-red-800 text-base">{{ statsL.terpakai }}</div>
+                  <div class="text-red-700 text-[11px] font-medium">Terpakai</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tombol Aksi -->
+          <a
+            :href="routes.public.pilihLantai + '?gedung=L'"
+            class="btn btn-primary w-full py-3 text-base flex items-center justify-center gap-2 group-hover:bg-primary-hover font-semibold"
+            @click.stop
+          >
+            <span>Pilih Lantai Gedung L (Elektro)</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </a>
+        </div>
+
+        <!-- 2. GEDUNG L RUMPUN SIPIL -->
+        <div
+          class="card p-6 sm:p-8 bg-white border border-border rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between cursor-pointer group hover:border-primary"
+          @click="selectBuilding('LS')"
+        >
+          <div>
+            <div class="flex items-start justify-between mb-4">
+              <span class="text-xs font-bold uppercase tracking-wider text-primary bg-primary-soft px-3 py-1.5 rounded-lg">
+                Fakultas Teknik UNJ
+              </span>
+              <div class="w-14 h-14 rounded-2xl bg-primary-soft text-primary flex items-center justify-center font-extrabold text-2xl group-hover:bg-primary group-hover:text-white transition">
+                LS
+              </div>
+            </div>
+
+            <h2 class="text-2xl font-bold text-ink group-hover:text-primary transition mb-2">
+              Gedung L (Rumpun Sipil)
+            </h2>
+            <p class="text-sm text-muted mb-6 leading-relaxed">
+              Gedung perkuliahan Rumpun Teknik Sipil Fakultas Teknik 4 lantai modern dengan aula, ruang kuliah, serta laboratorium struktur dan mekanika tanah.
+            </p>
+
+            <!-- Informasi Ringkasan -->
+            <div class="grid grid-cols-2 gap-3 mb-6 text-sm">
+              <div class="p-3 bg-surface rounded-xl border border-border">
+                <div class="text-xs text-muted">Jumlah Lantai</div>
+                <div class="text-lg font-bold text-ink mt-0.5">4 Lantai</div>
+              </div>
+              <div class="p-3 bg-surface rounded-xl border border-border">
+                <div class="text-xs text-muted">Total Ruangan</div>
+                <div class="text-lg font-bold text-ink mt-0.5">24 Ruangan</div>
+              </div>
+            </div>
+
+            <!-- Mini Okupansi -->
+            <div class="mb-6">
+              <div class="text-xs font-semibold text-muted mb-2 uppercase tracking-wider">
+                Status Okupansi Jam Ini:
+              </div>
+              <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                <div class="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200">
+                  <div class="font-bold text-emerald-800 text-base">{{ statsLS.tersedia }}</div>
+                  <div class="text-emerald-700 text-[11px] font-medium">Tersedia</div>
+                </div>
+                <div class="p-2.5 rounded-lg bg-yellow-50 border border-yellow-200">
+                  <div class="font-bold text-yellow-800 text-base">{{ statsLS.sebagian }}</div>
+                  <div class="text-yellow-700 text-[11px] font-medium">Sebagian</div>
+                </div>
+                <div class="p-2.5 rounded-lg bg-red-50 border border-red-200">
+                  <div class="font-bold text-red-800 text-base">{{ statsLS.terpakai }}</div>
+                  <div class="text-red-700 text-[11px] font-medium">Terpakai</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tombol Aksi -->
+          <a
+            :href="routes.public.pilihLantai + '?gedung=LS'"
+            class="btn btn-primary w-full py-3 text-base flex items-center justify-center gap-2 group-hover:bg-primary-hover font-semibold"
+            @click.stop
+          >
+            <span>Pilih Lantai Gedung L (Sipil)</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </a>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-xs text-muted border-t border-border bg-white mt-12">
+      &copy; 2024 Universitas Negeri Jakarta &mdash; Sistem Informasi Pemetaan & Reservasi Ruang Kelas
+    </footer>
+  </div>
+
+  <!-- Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.5.43/dist/vue.global.prod.js"></script>
+  <script src="../assets/js/core/config.js"></script>
+  <script src="../assets/js/core/routes.js"></script>
+  <script src="../assets/js/core/utils.js"></script>
+  <script src="../assets/js/core/store.js"></script>
+  <script src="../assets/js/data/buildings.js"></script>
+  <script src="../assets/js/data/rooms.js"></script>
+  <script src="../assets/js/data/bookings.js"></script>
+  <script src="../assets/js/core/api.js"></script>
+  <script src="../assets/js/core/auth.js"></script>
+  <script src="../assets/js/core/guard.js"></script>
+  <script src="../navigation/nav-loader.js"></script>
+  <script src="../assets/js/pages/public/pilih-gedung.js"></script>
+</body>
+</html>

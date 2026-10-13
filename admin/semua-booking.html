@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Semua Reservasi Kampus | Reservasi Ruangan UNJ</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="../assets/js/core/tailwind-config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/global.css" />
+  <link rel="stylesheet" href="../assets/css/admin/semua-booking.css" />
+</head>
+<body class="bg-surface text-ink antialiased" style="font-family:'Inter',system-ui,sans-serif;">
+  <div id="app" v-cloak class="min-h-screen flex flex-col justify-between">
+    <!-- Navbar Admin -->
+    <app-navbar></app-navbar>
+
+    <!-- Konten Utama -->
+    <main class="flex-1 mx-auto max-w-7xl w-full px-4 py-6 sm:py-8">
+      <!-- Breadcrumb -->
+      <nav class="flex items-center text-xs text-muted mb-4 gap-1.5" aria-label="Breadcrumb">
+        <a :href="routes.admin.dashboard" class="hover:text-primary">Admin</a>
+        <span>/</span>
+        <span class="text-ink font-medium">Semua Booking</span>
+      </nav>
+
+      <!-- Header Halaman -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-ink">
+            Monitoring Seluruh Reservasi Ruangan
+          </h1>
+          <p class="text-xs sm:text-sm text-muted mt-1">
+            Pantau dan kelola seluruh jadwal penggunaan kelas di Fakultas Teknik, serta batalkan jadwal bila terdapat kendala mendesak.
+          </p>
+        </div>
+      </div>
+
+      <!-- Toolbar Filter & Pencarian -->
+      <div class="card p-4 bg-white border border-border rounded-xl shadow-xs mb-6 grid grid-cols-1 sm:grid-cols-12 gap-3">
+        <!-- Input Search -->
+        <div class="sm:col-span-5 relative">
+          <input
+            type="text"
+            v-model="searchQuery"
+            placeholder="Cari mata kuliah, ruangan, nama pemohon..."
+            class="form-input text-xs pl-9 pr-4 py-2 w-full"
+          />
+          <svg class="absolute left-3 top-2.5 text-muted pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+
+        <!-- Filter Status -->
+        <div class="sm:col-span-2">
+          <select v-model="filterStatus" class="form-select text-xs py-2 w-full">
+            <option value="semua">Semua Status</option>
+            <option value="menunggu">Menunggu</option>
+            <option value="disetujui">Disetujui</option>
+            <option value="ditolak">Ditolak</option>
+            <option value="dibatalkan">Dibatalkan</option>
+            <option value="selesai">Selesai</option>
+          </select>
+        </div>
+
+        <!-- Filter Gedung -->
+        <div class="sm:col-span-2">
+          <select v-model="filterGedung" class="form-select text-xs py-2 w-full">
+            <option value="semua">Semua Gedung</option>
+            <option value="L">Gedung L (Elektro)</option>
+            <option value="LS">Gedung L (Sipil)</option>
+          </select>
+        </div>
+
+        <!-- Filter Tanggal & Reset -->
+        <div class="sm:col-span-3 flex items-center gap-2">
+          <input
+            type="date"
+            v-model="filterDate"
+            class="form-input text-xs py-2 w-full"
+          />
+          <button
+            v-if="filterStatus !== 'semua' || filterGedung !== 'semua' || filterDate || searchQuery"
+            type="button"
+            @click="filterStatus = 'semua'; filterGedung = 'semua'; filterDate = ''; searchQuery = ''"
+            class="btn btn-secondary text-xs py-2 px-3 whitespace-nowrap"
+            title="Reset Filter"
+          >
+            Reset
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div v-if="loading" class="card p-12 bg-white border border-border rounded-xl text-center">
+        <div class="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-3"></div>
+        <p class="text-xs text-muted">Memuat jadwal reservasi...</p>
+      </div>
+
+      <!-- Empty State -->
+      <div v-else-if="filteredBookings.length === 0" class="card p-12 bg-white border border-border rounded-xl text-center shadow-xs">
+        <div class="w-12 h-12 rounded-full bg-surface text-muted border border-border flex items-center justify-center mx-auto mb-3">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+        <h3 class="text-base font-bold text-ink">Tidak Ada Reservasi Ditemukan</h3>
+        <p class="text-xs text-muted max-w-sm mx-auto mt-1">
+          Tidak ada data reservasi yang cocok dengan kombinasi filter yang Anda pilih.
+        </p>
+      </div>
+
+      <!-- Tabel Semua Booking (Desktop & Tablet) -->
+      <div v-else class="space-y-4">
+        <div class="hidden sm:block card bg-white border border-border rounded-xl shadow-xs overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-ink">
+              <thead class="bg-primary-soft text-primary font-bold uppercase tracking-wider text-[11px] border-b border-border">
+                <tr>
+                  <th class="py-3.5 px-4 w-12 text-center">No</th>
+                  <th class="py-3.5 px-4">Mata Kuliah & Pemohon</th>
+                  <th class="py-3.5 px-4">Ruangan</th>
+                  <th class="py-3.5 px-4">Waktu Perkuliahan</th>
+                  <th class="py-3.5 px-4 text-center">Rombel</th>
+                  <th class="py-3.5 px-4 text-center">Status</th>
+                  <th class="py-3.5 px-4 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border">
+                <tr
+                  v-for="(b, idx) in paginatedBookings"
+                  :key="b.id"
+                  class="booking-admin-row transition"
+                >
+                  <td class="py-3.5 px-4 text-center text-muted font-medium">
+                    {{ (currentPage - 1) * perPage + idx + 1 }}
+                  </td>
+                  <td class="py-3.5 px-4">
+                    <div class="font-bold text-ink text-sm">{{ getCourseName(b.courseId) }}</div>
+                    <div class="text-[11px] text-muted">
+                      PJ: <strong>{{ getUserName(b.userId) }}</strong>
+                      <span v-if="b.isPaksa" class="badge badge-danger text-[9px] ml-1">Darurat Dekanat</span>
+                      <span v-if="b.isFallback" class="badge badge-warning text-[9px] ml-1">⚠️ Fallback</span>
+                    </div>
+                  </td>
+                  <td class="py-3.5 px-4">
+                    <div class="font-bold text-ink">{{ getRoomCode(b.ruanganId) }}</div>
+                    <div class="text-[11px] text-muted">
+                      {{ getRoom(b.ruanganId) ? (getRoom(b.ruanganId).gedung === 'LS' ? 'Gedung L (Sipil)' : 'Gedung L (Elektro)') : '' }}
+                    </div>
+                  </td>
+                  <td class="py-3.5 px-4">
+                    <div class="font-medium text-ink">{{ formatDate(b.tanggal) }}</div>
+                    <div class="text-[11px] text-muted">{{ formatTime(b.jamMulai, b.jamSelesai) }} WIB</div>
+                  </td>
+                  <td class="py-3.5 px-4 text-center">
+                    <span class="inline-flex px-2 py-0.5 rounded-md bg-surface border border-border text-xs font-semibold">
+                      {{ b.jumlahKelas }} Kelas
+                    </span>
+                  </td>
+                  <td class="py-3.5 px-4 text-center">
+                    <span
+                      class="badge text-[11px] font-semibold"
+                      :class="{
+                        'badge-warning': b.status === 'menunggu',
+                        'badge-success': b.status === 'disetujui',
+                        'badge-danger': b.status === 'ditolak' || b.status === 'dibatalkan',
+                        'badge-info': b.status === 'selesai'
+                      }"
+                    >
+                      {{ b.status }}
+                    </span>
+                  </td>
+                  <td class="py-3.5 px-4 text-right">
+                    <div class="inline-flex items-center gap-1.5 justify-end">
+                      <!-- Tombol Batalkan Khusus Admin untuk status Disetujui/Menunggu -->
+                      <button
+                        v-if="b.status === 'disetujui' || b.status === 'menunggu'"
+                        type="button"
+                        @click="openCancelModal(b)"
+                        class="btn btn-danger text-xs py-1.5 px-2.5 font-semibold"
+                        title="Batalkan Booking Ini"
+                      >
+                        Batalkan
+                      </button>
+                      <a
+                        :href="routes.pj.detailBooking + '?id=' + b.id"
+                        class="btn btn-secondary text-xs py-1.5 px-2.5"
+                      >
+                        Detail
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tampilan Mobile (Kartu) -->
+        <div class="sm:hidden space-y-3">
+          <div
+            v-for="b in paginatedBookings"
+            :key="b.id"
+            class="card p-4 bg-white border border-border rounded-xl shadow-xs"
+          >
+            <div class="flex items-start justify-between mb-2">
+              <span
+                class="badge text-[10px] font-bold"
+                :class="{
+                  'badge-warning': b.status === 'menunggu',
+                  'badge-success': b.status === 'disetujui',
+                  'badge-danger': b.status === 'ditolak' || b.status === 'dibatalkan',
+                  'badge-info': b.status === 'selesai'
+                }"
+              >
+                {{ b.status }}
+              </span>
+              <span class="text-xs font-bold text-primary">{{ getRoomCode(b.ruanganId) }}</span>
+            </div>
+            <h3 class="text-base font-bold text-ink">{{ getCourseName(b.courseId) }}</h3>
+            <div class="text-xs text-muted mb-3 space-y-0.5">
+              <div><strong>Waktu:</strong> {{ formatDate(b.tanggal) }} ({{ formatTime(b.jamMulai, b.jamSelesai) }})</div>
+              <div><strong>Pemohon:</strong> {{ getUserName(b.userId) }}</div>
+            </div>
+            <div class="flex items-center justify-end gap-1.5 pt-2 border-t border-border">
+              <button
+                v-if="b.status === 'disetujui' || b.status === 'menunggu'"
+                type="button"
+                @click="openCancelModal(b)"
+                class="btn btn-danger text-xs py-1.5 px-2.5 font-semibold"
+              >
+                Batalkan
+              </button>
+              <a :href="routes.pj.detailBooking + '?id=' + b.id" class="btn btn-secondary text-xs py-1.5 px-2.5">
+                Detail
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Paginasi -->
+        <div v-if="totalPages > 1" class="pagination-container">
+          <div class="text-xs text-muted">
+            Menampilkan halaman <strong>{{ currentPage }}</strong> dari <strong>{{ totalPages }}</strong> (Total {{ filteredBookings.length }} data)
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button
+              type="button"
+              @click="prevPage"
+              :disabled="currentPage === 1"
+              class="btn btn-secondary text-xs py-1.5 px-3"
+            >
+              &larr; Sebelumnya
+            </button>
+            <button
+              type="button"
+              @click="nextPage"
+              :disabled="currentPage === totalPages"
+              class="btn btn-secondary text-xs py-1.5 px-3"
+            >
+              Selanjutnya &rarr;
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-xs text-muted border-t border-border bg-white mt-12">
+      &copy; 2024 Universitas Negeri Jakarta &mdash; Sistem Informasi Pemetaan & Reservasi Ruang Kelas
+    </footer>
+
+    <!-- Modal Pembatalan Booking oleh Admin 🆕 -->
+    <div
+      v-if="cancelModalOpen"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 backdrop-blur-xs"
+      @click.self="closeCancelModal"
+    >
+      <div class="card p-6 bg-white border border-border rounded-2xl shadow-xl max-w-md w-full">
+        <div class="flex items-start justify-between mb-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-red-100 text-red-700 flex items-center justify-center font-bold">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-ink">Batalkan Reservasi Ruangan</h3>
+              <p class="text-xs text-muted">Tindakan ini memerlukan alasan resmi pembatalan</p>
+            </div>
+          </div>
+          <button @click="closeCancelModal" class="text-muted hover:text-ink text-lg">&times;</button>
+        </div>
+
+        <div v-if="selectedBooking" class="p-3 bg-surface rounded-xl border border-border text-xs mb-4 space-y-1">
+          <div><strong>Mata Kuliah:</strong> {{ getCourseName(selectedBooking.courseId) }}</div>
+          <div><strong>Ruangan:</strong> {{ getRoomCode(selectedBooking.ruanganId) }} &bull; {{ formatDate(selectedBooking.tanggal) }}</div>
+          <div><strong>Pemohon:</strong> {{ getUserName(selectedBooking.userId) }}</div>
+        </div>
+
+        <div class="form-group mb-4">
+          <label for="alasan-batal-input" class="form-label text-xs">
+            Alasan Pembatalan Resmi <span class="required">* (Minimal 10 karakter)</span>
+          </label>
+          <textarea
+            id="alasan-batal-input"
+            v-model="alasanBatal"
+            rows="3"
+            class="form-textarea text-xs"
+            :class="{ 'is-error': cancelError }"
+            placeholder="Contoh: Ruangan dialokasikan untuk kegiatan akreditasi BAN-PT..."
+          ></textarea>
+          <p v-if="cancelError" class="form-error text-[11px] mt-1">{{ cancelError }}</p>
+          <p class="text-[11px] text-muted mt-1">
+            Notifikasi otomatis akan dikirimkan kepada pemohon (PJ) dan dosen pengampu terkait.
+          </p>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-border">
+          <button
+            type="button"
+            @click="closeCancelModal"
+            class="btn btn-secondary text-xs py-2 px-3"
+            :disabled="actionLoading"
+          >
+            Tutup
+          </button>
+          <button
+            type="button"
+            @click="confirmCancelBooking"
+            class="btn btn-danger text-xs py-2 px-4 font-semibold"
+            :disabled="actionLoading"
+          >
+            <span v-if="actionLoading">Memproses...</span>
+            <span v-else>Konfirmasi Pembatalan</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.5.43/dist/vue.global.prod.js"></script>
+  <script src="../assets/js/core/config.js"></script>
+  <script src="../assets/js/core/routes.js"></script>
+  <script src="../assets/js/core/utils.js"></script>
+  <script src="../assets/js/core/store.js"></script>
+  <script src="../assets/js/data/buildings.js"></script>
+  <script src="../assets/js/data/rooms.js"></script>
+  <script src="../assets/js/data/users.js"></script>
+  <script src="../assets/js/data/courses.js"></script>
+  <script src="../assets/js/data/relations.js"></script>
+  <script src="../assets/js/data/bookings.js"></script>
+  <script src="../assets/js/data/notifications.js"></script>
+  <script src="../assets/js/data/logs.js"></script>
+  <script src="../assets/js/core/api.js"></script>
+  <script src="../assets/js/core/auth.js"></script>
+  <script src="../navigation/navbar-admin.js"></script>
+  <script src="../assets/js/pages/admin/semua-booking.js"></script>
+</body>
+</html>

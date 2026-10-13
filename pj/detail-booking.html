@@ -1,0 +1,246 @@
+<!-- 🆕 TAMBAHAN -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Detail Reservasi Ruangan | Reservasi Ruangan UNJ</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="../assets/js/core/tailwind-config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/global.css" />
+  <link rel="stylesheet" href="../assets/css/pj/detail-booking.css" />
+</head>
+<body class="bg-surface text-ink antialiased" style="font-family:'Inter',system-ui,sans-serif;">
+  <div id="app" v-cloak class="min-h-screen flex flex-col justify-between">
+    <!-- Navbar PJ / Admin -->
+    <app-navbar></app-navbar>
+
+    <!-- Konten Utama Detail Booking -->
+    <main class="flex-1 mx-auto max-w-4xl w-full px-4 py-8 sm:py-10">
+      <!-- Breadcrumb -->
+      <nav class="flex items-center text-xs text-muted mb-4 gap-1.5" aria-label="Breadcrumb">
+        <a :href="routes.public.landing" class="hover:text-primary">Beranda</a>
+        <span>/</span>
+        <a :href="routes.pj.riwayatBooking" class="hover:text-primary">Riwayat Booking</a>
+        <span>/</span>
+        <span class="text-ink font-medium">Detail Pengajuan #{{ booking ? booking.id : '' }}</span>
+      </nav>
+
+      <!-- Empty State jika ID tidak ditemukan -->
+      <div v-if="!booking" class="card p-12 bg-white border border-border rounded-2xl shadow-xs text-center">
+        <svg class="w-16 h-16 mx-auto text-muted/40 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="1.5"/><line x1="12" y1="8" x2="12" y2="12" stroke-width="1.5"/><line x1="12" y1="16" x2="12.01" y2="16" stroke-width="1.5"/></svg>
+        <h2 class="text-lg font-bold text-ink">Pengajuan Tidak Ditemukan</h2>
+        <p class="text-xs text-muted mt-1">Data reservasi dengan ID tersebut tidak tersedia di sistem.</p>
+        <a :href="routes.pj.riwayatBooking" class="btn btn-secondary btn-sm mt-4 inline-flex">Kembali ke Riwayat</a>
+      </div>
+
+      <!-- Detail Kartu Utama -->
+      <div v-else class="space-y-6">
+        <!-- Header Info & Status Badge -->
+        <div class="card p-6 bg-white border border-border rounded-2xl shadow-xs">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-border">
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-xs font-mono font-bold text-muted bg-surface px-2.5 py-1 rounded-md border border-border">
+                  ID: #{{ booking.id }}
+                </span>
+                <span class="badge" :class="getBadgeClass(booking.status)">
+                  {{ getStatusLabel(booking.status) }}
+                </span>
+                <span v-if="booking.isFallback" class="badge badge-warning" title="Peringatan Fallback: Menggunakan ruangan lebih besar">
+                  Fallback Pemborosan
+                </span>
+              </div>
+              <h1 class="text-2xl font-bold text-ink mt-2">
+                {{ courseObj ? courseObj.nama : 'Perkuliahan' }}
+              </h1>
+              <p class="text-xs text-muted mt-0.5">
+                Diajukan pada {{ formatDateTime(booking.createdAt) }} oleh {{ pemohonName }}
+              </p>
+            </div>
+
+            <!-- Tombol Batalkan Booking (Jika status masih Menunggu atau Disetujui) -->
+            <button
+              v-if="canCancel"
+              type="button"
+              @click="openCancelDialog"
+              class="btn btn-danger btn-sm text-xs font-semibold flex items-center gap-1.5 flex-shrink-0"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+              <span>Batalkan Booking</span>
+            </button>
+          </div>
+
+          <!-- Rincian Grid Data -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 text-xs">
+            <div class="p-3 bg-surface rounded-xl border border-border">
+              <span class="text-muted block mb-0.5">Ruang Kelas</span>
+              <span class="font-bold text-sm text-ink">{{ roomObj ? roomObj.kode : '-' }}</span>
+              <span class="text-muted block text-[11px]">{{ roomObj ? 'Gedung ' + roomObj.gedung + ' (Lt ' + roomObj.lantai + ')' : '' }}</span>
+            </div>
+
+            <div class="p-3 bg-surface rounded-xl border border-border">
+              <span class="text-muted block mb-0.5">Waktu Reservasi</span>
+              <span class="font-bold text-sm text-ink">{{ formatDate(booking.tanggal) }}</span>
+              <span class="text-muted block text-[11px]">{{ booking.jamMulai }} - {{ booking.jamSelesai }} WIB</span>
+            </div>
+
+            <div class="p-3 bg-surface rounded-xl border border-border">
+              <span class="text-muted block mb-0.5">Kapasitas Rombel</span>
+              <span class="font-bold text-sm text-ink">{{ booking.jumlahKelas || 1 }} Kelas</span>
+              <span class="text-muted block text-[11px]">Kapasitas Ruang: {{ roomObj ? roomObj.kapasitas : 1 }} Rombel</span>
+            </div>
+
+            <div class="p-3 bg-surface rounded-xl border border-border">
+              <span class="text-muted block mb-0.5">Dosen Pengampu</span>
+              <span class="font-bold text-ink">{{ dosenName }}</span>
+              <span class="text-muted block text-[11px]">Wajib ACC sebelum pemakaian</span>
+            </div>
+
+            <div class="p-3 bg-surface rounded-xl border border-border sm:col-span-2">
+              <span class="text-muted block mb-0.5">Alasan / Keperluan Reservasi</span>
+              <span class="font-medium text-ink italic leading-relaxed">"{{ booking.alasan || '-' }}"</span>
+            </div>
+          </div>
+
+          <!-- Info Peringatan Fallback jika ada -->
+          <div v-if="booking.isFallback" class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start gap-2">
+            <span class="text-base flex-shrink-0">⚠️</span>
+            <div>
+              <strong>Catatan Fallback:</strong> Pengajuan ini memakai ruangan berkapasitas {{ roomObj ? roomObj.kapasitas : 2 }} rombel untuk {{ booking.jumlahKelas || 1 }} kelas.
+              Tercatat di sistem administrasi pemborosan ruang.
+            </div>
+          </div>
+
+          <!-- Kotak Alasan Penolakan / Pembatalan jika ada -->
+          <div v-if="booking.status === 'ditolak' && booking.alasanTolak" class="mt-4 p-3.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-900">
+            <div class="font-bold mb-1 flex items-center gap-1.5 text-red-800">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+              Alasan Penolakan dari Dosen / Admin:
+            </div>
+            <p class="italic text-red-800 font-medium leading-relaxed">"{{ booking.alasanTolak }}"</p>
+          </div>
+
+          <div v-if="booking.status === 'dibatalkan' && booking.alasanBatal" class="mt-4 p-3.5 bg-gray-100 border border-gray-300 rounded-xl text-xs text-gray-800">
+            <div class="font-bold mb-1 text-gray-700">Alasan Pembatalan:</div>
+            <p class="italic text-gray-700 leading-relaxed">"{{ booking.alasanBatal }}"</p>
+          </div>
+        </div>
+
+        <!-- 2. Timeline Status Pengajuan -->
+        <div class="card p-6 bg-white border border-border rounded-2xl shadow-xs">
+          <h2 class="text-sm font-bold uppercase tracking-wider text-muted mb-4">
+            Timeline Perkembangan Pengajuan
+          </h2>
+
+          <div class="relative pl-6 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-border">
+            <!-- Langkah 1: Pengajuan Dibuat -->
+            <div class="relative">
+              <div class="absolute -left-6 top-0.5 w-4 h-4 rounded-full bg-primary border-2 border-white shadow-xs"></div>
+              <div>
+                <div class="font-bold text-ink text-xs">Pengajuan Dibuat oleh PJ Kelas</div>
+                <div class="text-[11px] text-muted">{{ formatDateTime(booking.createdAt) }}</div>
+                <p class="text-xs text-muted mt-0.5">Pengajuan masuk ke antrean persetujuan Dosen Pengampu.</p>
+              </div>
+            </div>
+
+            <!-- Langkah 2: Status Saat Ini -->
+            <div class="relative">
+              <div
+                class="absolute -left-6 top-0.5 w-4 h-4 rounded-full border-2 border-white shadow-xs"
+                :class="timelineDotClass"
+              ></div>
+              <div>
+                <div class="font-bold text-xs" :class="timelineTextClass">
+                  {{ timelineTitle }}
+                </div>
+                <div v-if="booking.processedAt" class="text-[11px] text-muted">
+                  {{ formatDateTime(booking.processedAt) }} &bull; Oleh: {{ processorName }}
+                </div>
+                <p class="text-xs text-muted mt-0.5">{{ timelineDesc }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tombol Kembali -->
+        <div class="flex justify-between items-center pt-2">
+          <a :href="routes.pj.riwayatBooking" class="btn btn-secondary text-xs flex items-center gap-1.5 font-semibold">
+            &larr; Kembali ke Riwayat Booking
+          </a>
+        </div>
+      </div>
+    </main>
+
+    <!-- Dialog Konfirmasi Pembatalan -->
+    <div
+      v-if="showCancelModal"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs"
+      @click.self="showCancelModal = false"
+    >
+      <div class="bg-white rounded-2xl shadow-2xl border border-border p-6 max-w-md w-full">
+        <h3 class="text-lg font-bold text-ink mb-1">Batalkan Reservasi Ruangan?</h3>
+        <p class="text-xs text-muted mb-4">
+          Tindakan ini akan membatalkan pemesanan ruangan dan memberitahukan dosen pengampu serta admin.
+        </p>
+
+        <div class="form-group mb-4">
+          <label for="cancel-reason" class="form-label text-xs">Alasan Pembatalan <span class="required">*</span></label>
+          <textarea
+            id="cancel-reason"
+            rows="3"
+            v-model.trim="cancelReason"
+            placeholder="Contoh: Jadwal perkuliahan diganti menjadi daring..."
+            class="form-textarea text-xs"
+          ></textarea>
+        </div>
+
+        <div class="flex justify-end gap-2.5">
+          <button
+            type="button"
+            @click="showCancelModal = false"
+            class="btn btn-secondary text-xs"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            @click="confirmCancelBooking"
+            :disabled="!cancelReason || cancelReason.length < 5 || cancelling"
+            class="btn btn-danger text-xs font-semibold"
+          >
+            {{ cancelling ? 'Membatalkan...' : 'Ya, Batalkan Reservasi' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-xs text-muted border-t border-border bg-white mt-12">
+      &copy; 2024 Universitas Negeri Jakarta &mdash; Sistem Informasi Pemetaan & Reservasi Ruang Kelas
+    </footer>
+  </div>
+
+  <!-- Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.5.43/dist/vue.global.prod.js"></script>
+  <script src="../assets/js/core/config.js"></script>
+  <script src="../assets/js/core/routes.js"></script>
+  <script src="../assets/js/core/utils.js"></script>
+  <script src="../assets/js/core/store.js"></script>
+  <script src="../assets/js/data/buildings.js"></script>
+  <script src="../assets/js/data/rooms.js"></script>
+  <script src="../assets/js/data/courses.js"></script>
+  <script src="../assets/js/data/bookings.js"></script>
+  <script src="../assets/js/data/users.js"></script>
+  <script src="../assets/js/core/api.js"></script>
+  <script src="../assets/js/core/auth.js"></script>
+  <script src="../assets/js/core/guard.js"></script>
+  <script src="../assets/js/components/toast.js"></script>
+  <script src="../assets/js/components/confirm-dialog.js"></script>
+  <script src="../navigation/navbar-pj.js"></script>
+  <script src="../assets/js/pages/pj/detail-booking.js"></script>
+</body>
+</html>

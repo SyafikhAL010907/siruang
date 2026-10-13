@@ -1,0 +1,7 @@
+/**
+ * log-aktivitas.css — Gaya halaman Log Aktivitas Admin (Halaman 29)
+ */
+
+.log-row:hover {
+  background-color: var(--color-surface, #F5F9F6);
+}

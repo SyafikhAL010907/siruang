@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reservasi Paksa (Bypass Darurat) | Reservasi Ruangan UNJ</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="../assets/js/core/tailwind-config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/global.css" />
+  <link rel="stylesheet" href="../assets/css/admin/reservasi-paksa.css" />
+</head>
+<body class="bg-surface text-ink antialiased" style="font-family:'Inter',system-ui,sans-serif;">
+  <div id="app" v-cloak class="min-h-screen flex flex-col justify-between">
+    <!-- Navbar Admin -->
+    <app-navbar></app-navbar>
+
+    <!-- Konten Utama -->
+    <main class="flex-1 mx-auto max-w-6xl w-full px-4 py-6 sm:py-8">
+      <!-- Breadcrumb -->
+      <nav class="flex items-center text-xs text-muted mb-4 gap-1.5" aria-label="Breadcrumb">
+        <a :href="routes.admin.dashboard" class="hover:text-primary">Admin</a>
+        <span>/</span>
+        <span class="text-ink font-medium">Reservasi Paksa</span>
+      </nav>
+
+      <!-- Banner Peringatan Darurat -->
+      <div class="card p-5 bg-red-50 border border-red-200 rounded-2xl shadow-xs mb-8 flex items-start gap-4">
+        <div class="w-10 h-10 rounded-xl bg-red-100 text-red-700 flex items-center justify-center font-bold text-xl flex-shrink-0">
+          ⚡
+        </div>
+        <div>
+          <h1 class="text-lg sm:text-xl font-bold text-red-950">
+            Fasilitas Reservasi Paksa (Darurat Dekanat)
+          </h1>
+          <p class="text-xs text-red-800 mt-1 leading-relaxed">
+            Halaman ini khusus digunakan oleh Administrator atas instruksi Pimpinan Fakultas untuk agenda darurat/institusi. Tindakan ini mem-bypass seluruh aturan persetujuan dosen dan batasan konflik. Jadwal perkuliahan yang bertabrakan akan dibatalkan otomatis dan diberi notifikasi resmi.
+          </p>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div v-if="loading" class="card p-12 bg-white border border-border rounded-xl text-center">
+        <div class="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-3"></div>
+        <p class="text-xs text-muted">Memeriksa ketersediaan jadwal...</p>
+      </div>
+
+      <!-- Grid Form & Panel Dampak -->
+      <div v-else class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <!-- Form Reservasi Darurat (7 Kolom) -->
+        <div class="lg:col-span-7 space-y-6">
+          <div class="card p-6 bg-white border border-border rounded-2xl shadow-xs">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-primary mb-4 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-primary"></span>
+              Formulir Reservasi Paksa
+            </h2>
+
+            <form @submit.prevent="submitReservasiPaksa" class="space-y-4 text-xs">
+              <!-- Tanggal Pelaksanaan -->
+              <div class="form-group">
+                <label for="force-date" class="form-label">Tanggal Kegiatan <span class="required">*</span></label>
+                <input
+                  id="force-date"
+                  type="date"
+                  v-model="form.tanggal"
+                  class="form-input text-xs"
+                  :class="{ 'is-error': errors.tanggal }"
+                  required
+                />
+                <p v-if="errors.tanggal" class="form-error text-[11px] mt-1">{{ errors.tanggal }}</p>
+              </div>
+
+              <!-- Jam Mulai & Selesai -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="form-group">
+                  <label for="force-start" class="form-label">Jam Mulai <span class="required">*</span></label>
+                  <select id="force-start" v-model="form.jamMulai" class="form-select text-xs">
+                    <option v-for="t in timeSlots" :key="t" :value="t">{{ t }} WIB</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="force-end" class="form-label">Jam Selesai <span class="required">*</span></label>
+                  <select id="force-end" v-model="form.jamSelesai" class="form-select text-xs">
+                    <option v-for="t in validEndSlots" :key="t" :value="t">{{ t }} WIB</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Pilihan Ruangan -->
+              <div class="form-group">
+                <label for="force-room" class="form-label">Ruang Kelas / Aula Target <span class="required">*</span></label>
+                <select id="force-room" v-model="form.ruanganId" class="form-select text-xs" :class="{ 'is-error': errors.ruanganId }" required>
+                  <optgroup label="Gedung L (Rumpun Elektro)">
+                    <option v-for="r in roomsL" :key="r.id" :value="r.id">
+                      {{ r.kode }} &mdash; {{ r.nama }} (Kapasitas {{ r.kapasitas }} Rombel)
+                    </option>
+                  </optgroup>
+                  <optgroup label="Gedung L (Rumpun Sipil)">
+                    <option v-for="r in roomsLS" :key="r.id" :value="r.id">
+                      {{ r.kode }} &mdash; {{ r.nama }} (Kapasitas {{ r.kapasitas }} Rombel)
+                    </option>
+                  </optgroup>
+                </select>
+                <p v-if="errors.ruanganId" class="form-error text-[11px] mt-1">{{ errors.ruanganId }}</p>
+              </div>
+
+              <!-- Nama Kegiatan Darurat -->
+              <div class="form-group">
+                <label for="force-name" class="form-label">Nama Agenda / Kegiatan Darurat <span class="required">*</span></label>
+                <input
+                  id="force-name"
+                  type="text"
+                  v-model="form.namaKegiatan"
+                  class="form-input text-xs"
+                  :class="{ 'is-error': errors.namaKegiatan }"
+                  placeholder="Contoh: Rapat Koordinasi Akreditasi Internasional"
+                  required
+                />
+                <p v-if="errors.namaKegiatan" class="form-error text-[11px] mt-1">{{ errors.namaKegiatan }}</p>
+              </div>
+
+              <!-- Alasan Resmi Dekanat -->
+              <div class="form-group">
+                <label for="force-reason" class="form-label">Alasan & Dasar Instruksi <span class="required">* (Minimal 10 karakter)</span></label>
+                <textarea
+                  id="force-reason"
+                  v-model="form.alasan"
+                  rows="3"
+                  class="form-textarea text-xs"
+                  :class="{ 'is-error': errors.alasan }"
+                  placeholder="Sebutkan dasar surat tugas atau urgensi instruksi pimpinan fakultas..."
+                  required
+                ></textarea>
+                <p v-if="errors.alasan" class="form-error text-[11px] mt-1">{{ errors.alasan }}</p>
+              </div>
+
+              <!-- Tombol Eksekusi -->
+              <div class="pt-4 border-t border-border">
+                <button
+                  type="submit"
+                  class="btn btn-danger w-full py-3 text-sm font-bold flex items-center justify-center gap-2 shadow-sm"
+                  :disabled="actionLoading"
+                >
+                  <span>⚡ Eksekusi Reservasi Paksa Sekarang</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Panel Deteksi Dampak & Bentrok (5 Kolom) -->
+        <div class="lg:col-span-5 space-y-6">
+          <div class="card p-5 bg-white border border-border rounded-2xl shadow-xs">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-ink mb-3 flex items-center justify-between">
+              <span>Analisis Konflik Jadwal</span>
+              <span
+                class="badge text-[10px]"
+                :class="impactedBookings.length > 0 ? 'badge-danger' : 'badge-success'"
+              >
+                {{ impactedBookings.length > 0 ? impactedBookings.length + ' Bentrok' : 'Slot Bersih' }}
+              </span>
+            </h2>
+
+            <!-- Tidak Ada Bentrok -->
+            <div v-if="impactedBookings.length === 0" class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900">
+              <div class="font-bold flex items-center gap-1.5 mb-1">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>Tidak Ada Jadwal Terdampak</span>
+              </div>
+              <p class="text-[11px] text-emerald-800 leading-relaxed">
+                Slot waktu pada tanggal dan ruangan yang dipilih saat ini belum memiliki reservasi kelas. Reservasi paksa dapat dieksekusi tanpa mengganggu perkuliahan lain.
+              </p>
+            </div>
+
+            <!-- Ada Bentrok (Terdampak) -->
+            <div v-else class="space-y-3">
+              <div class="p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-900">
+                <div class="font-bold flex items-center gap-1.5 text-red-800">
+                  <span class="animate-ping w-2 h-2 rounded-full bg-red-600"></span>
+                  <span>Perhatian: Jadwal Berikut Akan Dibatalkan!</span>
+                </div>
+                <p class="text-[11px] text-red-800 mt-1">
+                  Mengeksekusi reservasi paksa akan secara otomatis <strong>membatalkan</strong> jadwal berikut dan mengirimkan pemberitahuan ke PJ Mahasiswa serta Dosen pengampu:
+                </p>
+              </div>
+
+              <!-- Daftar Booking Terdampak -->
+              <div class="space-y-2">
+                <div
+                  v-for="b in impactedBookings"
+                  :key="b.id"
+                  class="p-3 bg-surface rounded-xl border border-red-200 text-xs"
+                >
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="font-bold text-ink">{{ getCourseName(b.courseId) }}</span>
+                    <span class="badge badge-danger text-[9px] uppercase">{{ b.status }}</span>
+                  </div>
+                  <div class="text-[11px] text-muted space-y-0.5">
+                    <div>Waktu: {{ b.jamMulai }} - {{ b.jamSelesai }} WIB ({{ b.jumlahKelas }} Rombel)</div>
+                    <div>Pemohon: <strong>{{ getUserName(b.userId) }}</strong></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Informasi Regulasi -->
+          <div class="card p-5 bg-white border border-border rounded-xl shadow-xs text-xs text-muted space-y-2">
+            <div class="font-bold text-ink">Catatan Kepatuhan Sistem:</div>
+            <p>1. Setiap reservasi paksa akan tercatat secara permanen di <strong>Log Aktivitas Audit</strong>.</p>
+            <p>2. Pemohon dan dosen dari jadwal yang dibatalkan akan menerima notifikasi prioritas tinggi.</p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-xs text-muted border-t border-border bg-white mt-12">
+      &copy; 2024 Universitas Negeri Jakarta &mdash; Sistem Informasi Pemetaan & Reservasi Ruang Kelas
+    </footer>
+  </div>
+
+  <!-- Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.5.43/dist/vue.global.prod.js"></script>
+  <script src="../assets/js/core/config.js"></script>
+  <script src="../assets/js/core/routes.js"></script>
+  <script src="../assets/js/core/utils.js"></script>
+  <script src="../assets/js/core/store.js"></script>
+  <script src="../assets/js/data/buildings.js"></script>
+  <script src="../assets/js/data/rooms.js"></script>
+  <script src="../assets/js/data/users.js"></script>
+  <script src="../assets/js/data/courses.js"></script>
+  <script src="../assets/js/data/relations.js"></script>
+  <script src="../assets/js/data/bookings.js"></script>
+  <script src="../assets/js/data/notifications.js"></script>
+  <script src="../assets/js/data/logs.js"></script>
+  <script src="../assets/js/core/api.js"></script>
+  <script src="../assets/js/core/auth.js"></script>
+  <script src="../navigation/navbar-admin.js"></script>
+  <script src="../assets/js/pages/admin/reservasi-paksa.js"></script>
+</body>
+</html>

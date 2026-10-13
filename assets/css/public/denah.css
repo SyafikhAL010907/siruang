@@ -1,0 +1,82 @@
+/* ============================================
+   denah.css — Gaya Khusus Denah 2D Interaktif
+   ============================================ */
+
+[v-cloak] {
+  display: none !important;
+}
+
+/* Kotak Ruangan pada Denah 2D Spasial */
+.room-box {
+  min-height: 130px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.room-box:hover {
+  transform: translateY(-2px);
+}
+
+/* Status Tersedia (Hijau) */
+.room-box-tersedia {
+  background-color: #F0FDF4;
+  border-color: #86EFAC;
+}
+.room-box-tersedia:hover {
+  border-color: #16A34A;
+  background-color: #DCFCE7;
+}
+
+/* Status Sebagian Terisi (Kuning) */
+.room-box-sebagian {
+  background-color: #FEFCE8;
+  border-color: #FDE047;
+}
+.room-box-sebagian:hover {
+  border-color: #EAB308;
+  background-color: #FEF9C3;
+}
+
+/* Status Terpakai Penuh (Merah) */
+.room-box-terpakai {
+  background-color: #FEF2F2;
+  border-color: #FCA5A5;
+}
+.room-box-terpakai:hover {
+  border-color: #DC2626;
+  background-color: #FEE2E2;
+}
+
+/* Status Nonaktif / Pemeliharaan (Abu-abu) */
+.room-box-nonaktif {
+  background-color: #F3F4F6;
+  border-color: #D1D5DB;
+}
+.room-box-nonaktif:hover {
+  border-color: #6B7280;
+  background-color: #E5E7EB;
+}
+
+/* Modal Backdrop */
+.modal-backdrop {
+  animation: fadeIn 0.15s ease-out;
+}
+
+.modal-card {
+  animation: slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

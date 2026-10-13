@@ -1,0 +1,27 @@
+/**
+ * dashboard-admin.css — Gaya halaman Dashboard Admin (Halaman 22)
+ */
+
+.stat-glow-warning {
+  border-left: 4px solid var(--color-warning, #EAB308);
+}
+
+.stat-glow-primary {
+  border-left: 4px solid var(--color-primary, #14532D);
+}
+
+.stat-glow-danger {
+  border-left: 4px solid #DC2626;
+}
+
+.stat-glow-info {
+  border-left: 4px solid #2563EB;
+}
+
+.admin-shortcut-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-shortcut-card:hover {
+  transform: translateY(-2px);
+}

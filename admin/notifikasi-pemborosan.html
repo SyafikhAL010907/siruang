@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Notifikasi Pemborosan Ruang | Reservasi Ruangan UNJ</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="../assets/js/core/tailwind-config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/global.css" />
+  <link rel="stylesheet" href="../assets/css/admin/notifikasi-pemborosan.css" />
+</head>
+<body class="bg-surface text-ink antialiased" style="font-family:'Inter',system-ui,sans-serif;">
+  <div id="app" v-cloak class="min-h-screen flex flex-col justify-between">
+    <!-- Navbar Admin -->
+    <app-navbar></app-navbar>
+
+    <!-- Konten Utama -->
+    <main class="flex-1 mx-auto max-w-7xl w-full px-4 py-6 sm:py-8">
+      <!-- Breadcrumb -->
+      <nav class="flex items-center text-xs text-muted mb-4 gap-1.5" aria-label="Breadcrumb">
+        <a :href="routes.admin.dashboard" class="hover:text-primary">Admin</a>
+        <span>/</span>
+        <span class="text-ink font-medium">Notifikasi Pemborosan</span>
+      </nav>
+
+      <!-- Header Halaman -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-ink">
+            Audit Notifikasi Pemborosan Ruangan (Fallback)
+          </h1>
+          <p class="text-xs sm:text-sm text-muted mt-1">
+            Daftar permohonan yang memakai ruangan berkapasitas besar (2-3 rombel) untuk rombel perkuliahan berukuran kecil akibat keterbatasan ruang standar.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-border shadow-xs text-xs">
+          <span class="px-2.5 py-1 rounded-lg bg-surface text-muted">
+            Total: <strong class="text-ink">{{ stats.total }} Kasus</strong>
+          </span>
+          <span class="px-2.5 py-1 rounded-lg bg-yellow-50 text-yellow-800 font-bold border border-yellow-200">
+            {{ stats.belumDitinjau }} Belum Ditinjau
+          </span>
+        </div>
+      </div>
+
+      <!-- Toolbar Filter & Pencarian -->
+      <div class="card p-4 bg-white border border-border rounded-xl shadow-xs mb-6 grid grid-cols-1 sm:grid-cols-12 gap-3">
+        <div class="sm:col-span-8 relative">
+          <input
+            type="text"
+            v-model="searchQuery"
+            placeholder="Cari mata kuliah, ruangan, nama PJ..."
+            class="form-input text-xs pl-9 pr-4 py-2 w-full"
+          />
+          <svg class="absolute left-3 top-2.5 text-muted pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+
+        <div class="sm:col-span-4 flex items-center gap-2">
+          <select v-model="filterReview" class="form-select text-xs py-2 w-full">
+            <option value="semua">Semua Status Tinjauan</option>
+            <option value="belum">Belum Ditinjau</option>
+            <option value="sudah">Sudah Ditinjau</option>
+          </select>
+          <button
+            v-if="filterReview !== 'semua' || searchQuery"
+            type="button"
+            @click="filterReview = 'semua'; searchQuery = ''"
+            class="btn btn-secondary text-xs py-2 px-3 whitespace-nowrap"
+          >
+            Reset
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div v-if="loading" class="card p-12 bg-white border border-border rounded-xl text-center">
+        <div class="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-3"></div>
+        <p class="text-xs text-muted">Memuat data pemborosan...</p>
+      </div>
+
+      <!-- Empty State -->
+      <div v-else-if="filteredList.length === 0" class="card p-12 bg-white border border-border rounded-xl text-center shadow-xs">
+        <div class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto mb-3">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h3 class="text-base font-bold text-ink">Tidak Ada Pemborosan Ruang</h3>
+        <p class="text-xs text-muted max-w-sm mx-auto mt-1">
+          Seluruh ruangan perkuliahan saat ini digunakan secara optimal sesuai proporsi kapasitas rombel.
+        </p>
+      </div>
+
+      <!-- Tabel Audit Pemborosan (Desktop & Tablet) -->
+      <div v-else class="space-y-4">
+        <div class="hidden sm:block card bg-white border border-border rounded-xl shadow-xs overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-ink">
+              <thead class="bg-primary-soft text-primary font-bold uppercase tracking-wider text-[11px] border-b border-border">
+                <tr>
+                  <th class="py-3.5 px-4 w-12 text-center">No</th>
+                  <th class="py-3.5 px-4">Ruang Kelas</th>
+                  <th class="py-3.5 px-4 text-center">Kapasitas vs Kebutuhan</th>
+                  <th class="py-3.5 px-4">Mata Kuliah & Pemohon</th>
+                  <th class="py-3.5 px-4">Waktu Perkuliahan</th>
+                  <th class="py-3.5 px-4 text-center">Status Tinjau</th>
+                  <th class="py-3.5 px-4 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border">
+                <tr
+                  v-for="(b, idx) in paginatedList"
+                  :key="b.id"
+                  class="hover:bg-surface transition"
+                >
+                  <td class="py-3.5 px-4 text-center text-muted font-medium">
+                    {{ (currentPage - 1) * perPage + idx + 1 }}
+                  </td>
+                  <td class="py-3.5 px-4">
+                    <div class="font-bold text-ink text-sm">{{ getRoomCode(b.ruanganId) }}</div>
+                    <div class="text-[11px] text-muted">
+                      {{ getRoom(b.ruanganId) ? (getRoom(b.ruanganId).gedung === 'LS' ? 'Gedung L (Sipil) Lt ' : 'Gedung L (Elektro) Lt ') + getRoom(b.ruanganId).lantai : '' }}
+                    </div>
+                  </td>
+                  <td class="py-3.5 px-4 text-center">
+                    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-yellow-50 border border-yellow-200">
+                      <span class="text-yellow-800 font-bold">Kapasitas: {{ getRoomCapacity(b.ruanganId) }}</span>
+                      <span class="text-muted">vs</span>
+                      <span class="text-ink font-extrabold">Pakai: {{ b.jumlahKelas }}</span>
+                    </div>
+                    <div class="text-[10px] text-red-700 font-medium mt-0.5">
+                      Sisa {{ getRoomCapacity(b.ruanganId) - b.jumlahKelas }} rombel tidak terisi
+                    </div>
+                  </td>
+                  <td class="py-3.5 px-4">
+                    <div class="font-bold text-ink">{{ getCourseName(b.courseId) }}</div>
+                    <div class="text-[11px] text-muted">PJ: {{ getUserName(b.userId) }}</div>
+                    <div class="text-[11px] text-muted italic mt-0.5">"{{ b.alasan }}"</div>
+                  </td>
+                  <td class="py-3.5 px-4">
+                    <div class="font-medium text-ink">{{ formatDate(b.tanggal) }}</div>
+                    <div class="text-[11px] text-muted">{{ formatTime(b.jamMulai, b.jamSelesai) }} WIB</div>
+                  </td>
+                  <td class="py-3.5 px-4 text-center">
+                    <span
+                      class="badge text-[11px] font-semibold"
+                      :class="b.reviewed ? 'badge-success' : 'badge-warning'"
+                    >
+                      {{ b.reviewed ? 'Sudah Ditinjau' : 'Belum Ditinjau' }}
+                    </span>
+                  </td>
+                  <td class="py-3.5 px-4 text-right">
+                    <button
+                      type="button"
+                      @click="toggleReviewed(b)"
+                      class="btn text-xs py-1.5 px-3 font-semibold shadow-xs"
+                      :class="b.reviewed ? 'btn-secondary text-muted' : 'btn-primary'"
+                      :disabled="actionLoading"
+                    >
+                      {{ b.reviewed ? 'Batal Tinjau' : 'Tandai Sudah Ditinjau' }}
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tampilan Mobile (Kartu) -->
+        <div class="sm:hidden space-y-3">
+          <div
+            v-for="b in paginatedList"
+            :key="b.id"
+            class="card p-4 bg-white border border-border rounded-xl shadow-xs waste-card"
+            :class="{ reviewed: b.reviewed }"
+          >
+            <div class="flex items-start justify-between mb-2">
+              <span class="badge text-[10px] font-bold" :class="b.reviewed ? 'badge-success' : 'badge-warning'">
+                {{ b.reviewed ? 'Sudah Ditinjau' : 'Perlu Tinjauan' }}
+              </span>
+              <span class="text-xs font-bold text-red-700">
+                Kapasitas {{ getRoomCapacity(b.ruanganId) }} vs {{ b.jumlahKelas }} Rombel
+              </span>
+            </div>
+            <h3 class="text-base font-bold text-ink mb-1">{{ getRoomCode(b.ruanganId) }} &mdash; {{ getCourseName(b.courseId) }}</h3>
+            <div class="text-xs text-muted mb-3 space-y-0.5">
+              <div>Waktu: {{ formatDate(b.tanggal) }} ({{ formatTime(b.jamMulai, b.jamSelesai) }})</div>
+              <div>PJ: {{ getUserName(b.userId) }}</div>
+              <div class="italic">"{{ b.alasan }}"</div>
+            </div>
+            <div class="flex items-center justify-end pt-2 border-t border-border">
+              <button
+                type="button"
+                @click="toggleReviewed(b)"
+                class="btn text-xs py-1.5 px-3"
+                :class="b.reviewed ? 'btn-secondary' : 'btn-primary'"
+                :disabled="actionLoading"
+              >
+                {{ b.reviewed ? 'Batal Tinjau' : 'Tandai Sudah Ditinjau' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Paginasi -->
+        <div v-if="totalPages > 1" class="pagination-container">
+          <div class="text-xs text-muted">
+            Menampilkan halaman <strong>{{ currentPage }}</strong> dari <strong>{{ totalPages }}</strong> (Total {{ filteredList.length }} kasus)
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button
+              type="button"
+              @click="prevPage"
+              :disabled="currentPage === 1"
+              class="btn btn-secondary text-xs py-1.5 px-3"
+            >
+              &larr; Sebelumnya
+            </button>
+            <button
+              type="button"
+              @click="nextPage"
+              :disabled="currentPage === totalPages"
+              class="btn btn-secondary text-xs py-1.5 px-3"
+            >
+              Selanjutnya &rarr;
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-xs text-muted border-t border-border bg-white mt-12">
+      &copy; 2024 Universitas Negeri Jakarta &mdash; Sistem Informasi Pemetaan & Reservasi Ruang Kelas
+    </footer>
+  </div>
+
+  <!-- Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.5.43/dist/vue.global.prod.js"></script>
+  <script src="../assets/js/core/config.js"></script>
+  <script src="../assets/js/core/routes.js"></script>
+  <script src="../assets/js/core/utils.js"></script>
+  <script src="../assets/js/core/store.js"></script>
+  <script src="../assets/js/data/buildings.js"></script>
+  <script src="../assets/js/data/rooms.js"></script>
+  <script src="../assets/js/data/users.js"></script>
+  <script src="../assets/js/data/courses.js"></script>
+  <script src="../assets/js/data/relations.js"></script>
+  <script src="../assets/js/data/bookings.js"></script>
+  <script src="../assets/js/data/notifications.js"></script>
+  <script src="../assets/js/data/logs.js"></script>
+  <script src="../assets/js/core/api.js"></script>
+  <script src="../assets/js/core/auth.js"></script>
+  <script src="../navigation/navbar-admin.js"></script>
+  <script src="../assets/js/pages/admin/notifikasi-pemborosan.js"></script>
+</body>
+</html>

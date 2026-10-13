@@ -1,0 +1,18 @@
+/**
+ * notifikasi-pemborosan.css — Gaya halaman Notifikasi Pemborosan Admin (Halaman 28)
+ */
+
+.waste-card {
+  border-left: 4px solid var(--color-warning, #EAB308);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.waste-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.waste-card.reviewed {
+  border-left: 4px solid var(--color-border, #D5E2D9);
+  opacity: 0.88;
+}

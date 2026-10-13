@@ -1,0 +1,7 @@
+/**
+ * manajemen-relasi.css — Gaya halaman Manajemen Relasi Matkul-Dosen-PJ (Halaman 24)
+ */
+
+.relation-card:hover {
+  border-color: var(--color-primary, #14532D);
+}

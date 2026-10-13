@@ -1,0 +1,54 @@
+/**
+ * statistik-laporan.css — Gaya halaman Statistik & Laporan Admin (Halaman 30)
+ * Mendukung print stylesheet untuk ekspor laporan PDF via browser print.
+ */
+
+.chart-container {
+  position: relative;
+  height: 260px;
+  width: 100%;
+}
+
+/* ⚠️ Print Stylesheet untuk Ekspor PDF */
+@media print {
+  /* Sembunyikan elemen navigasi dan tombol interaktif saat dicetak */
+  .navbar,
+  nav[aria-label="Breadcrumb"],
+  footer,
+  .no-print,
+  button,
+  .btn {
+    display: none !important;
+  }
+
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+  }
+
+  main {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .card {
+    border: 1px solid #cccccc !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+    margin-bottom: 1.5rem !important;
+  }
+
+  .print-only-header {
+    display: block !important;
+    text-align: center;
+    border-bottom: 2px solid #14532D;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+  }
+}
+
+.print-only-header {
+  display: none;
+}

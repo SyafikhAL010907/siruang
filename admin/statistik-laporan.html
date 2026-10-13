@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Statistik & Laporan Eksekutif | Reservasi Ruangan UNJ</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="../assets/js/core/tailwind-config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/global.css" />
+  <link rel="stylesheet" href="../assets/css/admin/statistik-laporan.css" />
+</head>
+<body class="bg-surface text-ink antialiased" style="font-family:'Inter',system-ui,sans-serif;">
+  <div id="app" v-cloak class="min-h-screen flex flex-col justify-between">
+    <!-- Navbar Admin -->
+    <app-navbar></app-navbar>
+
+    <!-- Header Khusus Print (Laporan Resmi Cetak) ⚠️ -->
+    <div class="print-only-header">
+      <h1 class="text-xl font-bold uppercase tracking-wider text-black">
+        Laporan Eksekutif Pemetaan & Reservasi Ruang Kelas
+      </h1>
+      <p class="text-xs text-gray-600 mt-1">
+        Fakultas Teknik &mdash; Universitas Negeri Jakarta (Gedung Rumpun Elektro & Rumpun Sipil)
+      </p>
+    </div>
+
+    <!-- Konten Utama -->
+    <main class="flex-1 mx-auto max-w-7xl w-full px-4 py-6 sm:py-8">
+      <!-- Breadcrumb -->
+      <nav class="flex items-center text-xs text-muted mb-4 gap-1.5" aria-label="Breadcrumb">
+        <a :href="routes.admin.dashboard" class="hover:text-primary">Admin</a>
+        <span>/</span>
+        <span class="text-ink font-medium">Statistik & Laporan</span>
+      </nav>
+
+      <!-- Header Halaman & Tombol Ekspor -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-ink">
+            Statistik & Analisis Laporan
+          </h1>
+          <p class="text-xs sm:text-sm text-muted mt-1">
+            Visualisasi pemanfaatan fasilitas ruang kelas, rasio keberhasilan booking, dan laporan audit ekspor.
+          </p>
+        </div>
+
+        <!-- Tombol Ekspor CSV & Cetak PDF -->
+        <div class="flex items-center gap-2.5 flex-wrap">
+          <button
+            type="button"
+            @click="exportCSV"
+            class="btn btn-secondary text-xs py-2.5 px-4 font-semibold flex items-center gap-2 shadow-xs"
+            title="Download Spreadsheet CSV"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Ekspor CSV</span>
+          </button>
+
+          <button
+            type="button"
+            @click="exportPDF"
+            class="btn btn-primary text-xs py-2.5 px-4 font-semibold flex items-center gap-2 shadow-xs"
+            title="Cetak Dokumen Laporan / Simpan PDF"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            <span>Cetak / Simpan PDF</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div v-if="loading" class="card p-12 bg-white border border-border rounded-xl text-center">
+        <div class="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-3"></div>
+        <p class="text-xs text-muted">Mengkalkulasi agregasi metrik...</p>
+      </div>
+
+      <!-- Ringkasan Kartu Metrik -->
+      <div v-else class="space-y-8">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+          <div class="card p-4 bg-white border border-border rounded-xl shadow-xs">
+            <div class="text-[11px] text-muted">Total Reservasi</div>
+            <div class="text-2xl font-extrabold text-ink mt-1">{{ stats.totalBookings }}</div>
+            <div class="text-[10px] text-muted mt-0.5">Seluruh Riwayat</div>
+          </div>
+          <div class="card p-4 bg-white border border-border rounded-xl shadow-xs">
+            <div class="text-[11px] text-muted">Disetujui (ACC)</div>
+            <div class="text-2xl font-extrabold text-emerald-800 mt-1">{{ stats.disetujui }}</div>
+            <div class="text-[10px] text-emerald-700 mt-0.5">Jadwal Sukses</div>
+          </div>
+          <div class="card p-4 bg-white border border-border rounded-xl shadow-xs">
+            <div class="text-[11px] text-muted">Menunggu Dosen</div>
+            <div class="text-2xl font-extrabold text-yellow-800 mt-1">{{ stats.menunggu }}</div>
+            <div class="text-[10px] text-yellow-700 mt-0.5">Pending Review</div>
+          </div>
+          <div class="card p-4 bg-white border border-border rounded-xl shadow-xs">
+            <div class="text-[11px] text-muted">Selesai Berlangsung</div>
+            <div class="text-2xl font-extrabold text-blue-900 mt-1">{{ stats.selesai }}</div>
+            <div class="text-[10px] text-blue-700 mt-0.5">Selesai Kuliah</div>
+          </div>
+          <div class="card p-4 bg-white border border-border rounded-xl shadow-xs">
+            <div class="text-[11px] text-muted">Ditolak / Batal</div>
+            <div class="text-2xl font-extrabold text-red-800 mt-1">{{ stats.ditolak + stats.dibatalkan }}</div>
+            <div class="text-[10px] text-red-700 mt-0.5">Tidak Terealisasi</div>
+          </div>
+          <div class="card p-4 bg-white border border-border rounded-xl shadow-xs">
+            <div class="text-[11px] text-muted">Kasus Fallback</div>
+            <div class="text-2xl font-extrabold text-amber-800 mt-1">{{ stats.fallback }}</div>
+            <div class="text-[10px] text-amber-700 mt-0.5">Pemborosan Ruang</div>
+          </div>
+        </div>
+
+        <!-- Dua Grafik Chart.js -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Grafik 1: Proporsi Status Booking (Donut) -->
+          <div class="card p-5 sm:p-6 bg-white border border-border rounded-2xl shadow-xs">
+            <h2 class="text-sm font-bold text-ink mb-1">Distribusi Status Permohonan</h2>
+            <p class="text-xs text-muted mb-4">Proporsi keputusan verifikasi ruangan semester ini</p>
+            <div class="chart-container">
+              <canvas id="chartStatusReservasi"></canvas>
+            </div>
+          </div>
+
+          <!-- Grafik 2: Okupansi per Lantai (Bar) -->
+          <div class="card p-5 sm:p-6 bg-white border border-border rounded-2xl shadow-xs">
+            <h2 class="text-sm font-bold text-ink mb-1">Tingkat Utilisasi per Lantai</h2>
+            <p class="text-xs text-muted mb-4">Jumlah frekuensi reservasi kelas di Lantai 1 s.d 4</p>
+            <div class="chart-container">
+              <canvas id="chartOkupansiLantai"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dua Tabel Ringkasan Rinci -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- 1. Top 5 Ruangan Terpopuler -->
+          <div class="card p-5 sm:p-6 bg-white border border-border rounded-2xl shadow-xs">
+            <h2 class="text-sm font-bold text-ink mb-1">5 Ruangan Paling Populer (Sering Digunakan)</h2>
+            <p class="text-xs text-muted mb-4">Ruang kelas dengan intensitas peminjaman tertinggi</p>
+
+            <div class="divide-y divide-border text-xs">
+              <div
+                v-for="(tr, idx) in topRooms"
+                :key="tr.id"
+                class="py-3 flex items-center justify-between"
+              >
+                <div class="flex items-center gap-3">
+                  <div class="w-7 h-7 rounded-lg bg-primary-soft text-primary font-extrabold flex items-center justify-center text-xs">
+                    {{ idx + 1 }}
+                  </div>
+                  <div>
+                    <div class="font-bold text-ink text-sm">{{ tr.kode }} &mdash; {{ tr.nama }}</div>
+                    <div class="text-[11px] text-muted">{{ tr.gedung }}</div>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="font-extrabold text-primary text-sm">{{ tr.count }} Kali</div>
+                  <div class="text-[10px] text-muted">Reservasi</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Ringkasan Okupansi per Lantai -->
+          <div class="card p-5 sm:p-6 bg-white border border-border rounded-2xl shadow-xs">
+            <h2 class="text-sm font-bold text-ink mb-1">Rincian Reservasi per Lantai</h2>
+            <p class="text-xs text-muted mb-4">Komparasi total aktivitas di Gedung Elektro & Sipil</p>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-surface text-muted font-bold border-b border-border">
+                  <tr>
+                    <th class="py-2.5 px-3">Tingkat Lantai</th>
+                    <th class="py-2.5 px-3 text-center">Gedung Elektro</th>
+                    <th class="py-2.5 px-3 text-center">Gedung Sipil</th>
+                    <th class="py-2.5 px-3 text-right">Total Aktivitas</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                  <tr v-for="fo in floorOccupancy" :key="fo.lantai" class="hover:bg-surface/50">
+                    <td class="py-2.5 px-3 font-bold text-ink">Lantai {{ fo.lantai }}</td>
+                    <td class="py-2.5 px-3 text-center text-muted font-medium">{{ fo.elektro }} Kelas</td>
+                    <td class="py-2.5 px-3 text-center text-muted font-medium">{{ fo.sipil }} Kelas</td>
+                    <td class="py-2.5 px-3 text-right font-extrabold text-primary">{{ fo.total }} Kali</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="mt-4 p-3 bg-surface rounded-xl border border-border text-[11px] text-muted flex items-center justify-between">
+              <span>Total Ruangan Aktif Kampus: <strong>48 Ruangan</strong></span>
+              <span class="text-ink font-semibold">2 Rumpun Teknik (Elektro & Sipil)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-xs text-muted border-t border-border bg-white mt-12 no-print">
+      &copy; 2024 Universitas Negeri Jakarta &mdash; Sistem Informasi Pemetaan & Reservasi Ruang Kelas
+    </footer>
+  </div>
+
+  <!-- Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.5.43/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="../assets/js/core/config.js"></script>
+  <script src="../assets/js/core/routes.js"></script>
+  <script src="../assets/js/core/utils.js"></script>
+  <script src="../assets/js/core/store.js"></script>
+  <script src="../assets/js/data/buildings.js"></script>
+  <script src="../assets/js/data/rooms.js"></script>
+  <script src="../assets/js/data/users.js"></script>
+  <script src="../assets/js/data/courses.js"></script>
+  <script src="../assets/js/data/relations.js"></script>
+  <script src="../assets/js/data/bookings.js"></script>
+  <script src="../assets/js/data/notifications.js"></script>
+  <script src="../assets/js/data/logs.js"></script>
+  <script src="../assets/js/core/api.js"></script>
+  <script src="../assets/js/core/auth.js"></script>
+  <script src="../navigation/navbar-admin.js"></script>
+  <script src="../assets/js/pages/admin/statistik-laporan.js"></script>
+</body>
+</html>

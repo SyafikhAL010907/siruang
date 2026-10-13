@@ -1,0 +1,173 @@
+<!-- 🆕 TAMBAHAN -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mata Kuliah Saya | Reservasi Ruangan UNJ</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="../assets/js/core/tailwind-config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/global.css" />
+  <link rel="stylesheet" href="../assets/css/mahasiswa/mata-kuliah-saya.css" />
+</head>
+<body class="bg-surface text-ink antialiased" style="font-family:'Inter',system-ui,sans-serif;">
+  <div id="app" v-cloak class="min-h-screen flex flex-col justify-between">
+    <!-- Navbar Dinamis Sesuai Role (Mahasiswa / PJ / Admin) -->
+    <app-navbar></app-navbar>
+
+    <!-- Konten Mata Kuliah Saya -->
+    <main class="flex-1 mx-auto max-w-7xl w-full px-4 py-8 sm:py-10">
+      <!-- Breadcrumb -->
+      <nav class="flex items-center text-xs text-muted mb-4 gap-1.5" aria-label="Breadcrumb">
+        <a :href="routes.public.landing" class="hover:text-primary">Beranda</a>
+        <span>/</span>
+        <span class="text-ink font-medium">Mata Kuliah Saya</span>
+      </nav>
+
+      <!-- Header Halaman -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="badge badge-info font-bold">Data Akademik</span>
+            <span class="text-xs text-muted">Semester Berjalan 2024/2025</span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-bold text-ink mt-1.5">Mata Kuliah & Relasi Kelas</h1>
+          <p class="text-xs sm:text-sm text-muted mt-1">
+            Daftar mata kuliah aktif beserta dosen pengampu dan penanggung jawab (PJ) kelas yang bertugas.
+          </p>
+        </div>
+
+        <a
+          v-if="canBook"
+          :href="routes.pj.formReservasi"
+          class="btn btn-primary text-sm flex items-center gap-2 font-semibold shadow-xs"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>Pesan Ruang Kuliah</span>
+        </a>
+      </div>
+
+      <!-- Filter & Pencarian -->
+      <div class="card p-4 sm:p-5 bg-white border border-border rounded-xl shadow-xs mb-6">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+          <!-- Filter Prodi -->
+          <div class="form-group">
+            <label for="filter-prodi" class="form-label text-xs mb-1">Filter Program Studi:</label>
+            <select id="filter-prodi" v-model="filterProdi" class="form-select text-xs py-2">
+              <option value="semua">Semua Program Studi</option>
+              <option v-for="p in prodiList" :key="p.id" :value="p.id">
+                {{ p.kode }} &mdash; {{ p.nama }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Pencarian Mata Kuliah / Dosen -->
+          <div class="form-group sm:col-span-2">
+            <label for="search-course" class="form-label text-xs mb-1">Cari Mata Kuliah / Dosen / PJ:</label>
+            <div class="relative">
+              <input
+                id="search-course"
+                type="text"
+                v-model.trim="searchKeyword"
+                placeholder="Ketik nama mata kuliah, kode, nama dosen..."
+                class="form-input text-xs py-2 pl-8"
+              />
+              <span class="absolute inset-y-0 left-0 flex items-center pl-2.5 text-muted pointer-events-none">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grid Kartu Mata Kuliah -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div
+          v-for="item in filteredCourseList"
+          :key="item.id"
+          class="card p-5 bg-white border border-border rounded-xl shadow-xs hover:shadow-md transition flex flex-col justify-between"
+        >
+          <div>
+            <div class="flex items-start justify-between gap-2 mb-3">
+              <span class="text-xs font-bold uppercase tracking-wider text-primary bg-primary-soft px-2.5 py-1 rounded-md">
+                {{ item.kode }} &bull; {{ item.sks }} SKS
+              </span>
+              <span class="badge" :class="item.relationStatus === 'aktif' ? 'badge-success' : 'badge-neutral'">
+                {{ item.relationStatus === 'aktif' ? 'Relasi Aktif' : 'Belum Ada Relasi' }}
+              </span>
+            </div>
+
+            <h2 class="text-lg font-bold text-ink mb-1">{{ item.nama }}</h2>
+            <p class="text-xs text-muted mb-4">{{ item.prodiName }}</p>
+
+            <!-- Rincian Dosen & PJ -->
+            <div class="space-y-2.5 pt-3 border-t border-border text-xs">
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-lg bg-surface text-primary flex items-center justify-center flex-shrink-0 border border-border">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <div>
+                  <div class="text-[10px] text-muted">Dosen Pengampu:</div>
+                  <div class="font-bold text-ink">{{ item.dosenName }}</div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-lg bg-surface text-amber-700 flex items-center justify-center flex-shrink-0 border border-border">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>
+                </div>
+                <div>
+                  <div class="text-[10px] text-muted">Penanggung Jawab (PJ):</div>
+                  <div class="font-bold text-ink">{{ item.pjName }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Aksi Cepat Booking (Jika PJ / Admin) -->
+          <div v-if="canBook && item.relationStatus === 'aktif'" class="mt-4 pt-3 border-t border-border">
+            <a
+              :href="routes.pj.formReservasi"
+              class="btn btn-secondary btn-sm w-full text-xs font-semibold flex items-center justify-center gap-1.5"
+            >
+              <span>Ajukan Ruang Kuliah Ini</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State jika tidak ada yang cocok -->
+      <div v-if="filteredCourseList.length === 0" class="card p-12 bg-white border border-border rounded-xl text-center shadow-xs">
+        <svg class="w-12 h-12 mx-auto text-muted/40 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="1.5"/><line x1="12" y1="8" x2="12" y2="12" stroke-width="1.5"/><line x1="12" y1="16" x2="12.01" y2="16" stroke-width="1.5"/></svg>
+        <p class="font-semibold text-ink text-sm">Mata Kuliah Tidak Ditemukan</p>
+        <p class="text-xs text-muted mt-1">Coba gunakan kata kunci pencarian yang berbeda atau reset filter program studi.</p>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-xs text-muted border-t border-border bg-white mt-12">
+      &copy; 2024 Universitas Negeri Jakarta &mdash; Sistem Informasi Pemetaan & Reservasi Ruang Kelas
+    </footer>
+  </div>
+
+  <!-- Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.5.43/dist/vue.global.prod.js"></script>
+  <script src="../assets/js/core/config.js"></script>
+  <script src="../assets/js/core/routes.js"></script>
+  <script src="../assets/js/core/utils.js"></script>
+  <script src="../assets/js/core/store.js"></script>
+  <script src="../assets/js/data/courses.js"></script>
+  <script src="../assets/js/data/relations.js"></script>
+  <script src="../assets/js/data/prodi.js"></script>
+  <script src="../assets/js/data/users.js"></script>
+  <script src="../assets/js/core/api.js"></script>
+  <script src="../assets/js/core/auth.js"></script>
+  <script src="../assets/js/core/guard.js"></script>
+  <script src="../navigation/nav-loader.js"></script>
+  <script src="../assets/js/pages/mahasiswa/mata-kuliah-saya.js"></script>
+</body>
+</html>

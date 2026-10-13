@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard Administrator | Reservasi Ruangan UNJ</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="../assets/js/core/tailwind-config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/global.css" />
+  <link rel="stylesheet" href="../assets/css/admin/dashboard-admin.css" />
+</head>
+<body class="bg-surface text-ink antialiased" style="font-family:'Inter',system-ui,sans-serif;">
+  <div id="app" v-cloak class="min-h-screen flex flex-col justify-between">
+    <!-- Navbar Admin -->
+    <app-navbar></app-navbar>
+
+    <!-- Konten Utama -->
+    <main class="flex-1 mx-auto max-w-7xl w-full px-4 py-6 sm:py-8">
+      <!-- Breadcrumb -->
+      <nav class="flex items-center text-xs text-muted mb-4 gap-1.5" aria-label="Breadcrumb">
+        <a :href="routes.admin.dashboard" class="hover:text-primary">Admin</a>
+        <span>/</span>
+        <span class="text-ink font-medium">Dashboard Utama</span>
+      </nav>
+
+      <!-- Welcome Banner Admin -->
+      <div class="card p-6 bg-white border border-border rounded-2xl shadow-xs mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-primary-soft text-primary text-xs font-bold mb-2">
+            <span>Pusat Kendali Sistem</span>
+            <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+            <span>Fakultas Teknik UNJ</span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-ink">
+            Selamat Datang, Administrator
+          </h1>
+          <p class="text-xs sm:text-sm text-muted mt-1">
+            Pantau ketersediaan ruang, manajemen relasi, verifikasi akun, dan kelola operasional reservasi kampus secara terpusat.
+          </p>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <a :href="routes.admin.reservasiPaksa" class="btn btn-danger text-xs py-2.5 px-4 font-semibold shadow-xs">
+            ⚡ Reservasi Paksa
+          </a>
+          <a :href="routes.admin.statistikLaporan" class="btn btn-secondary text-xs py-2.5 px-4 font-semibold">
+            Lihat Statistik &rarr;
+          </a>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div v-if="loading" class="card p-12 bg-white border border-border rounded-2xl text-center mb-8">
+        <div class="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-3"></div>
+        <p class="text-xs text-muted">Memuat metrik sistem terkini...</p>
+      </div>
+
+      <!-- Ringkasan Statistik Utama (5 KPI Cards) -->
+      <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4 mb-8">
+        <!-- 1. Booking Hari Ini -->
+        <div class="card p-4 sm:p-5 bg-white border border-border rounded-xl shadow-xs stat-glow-primary">
+          <div class="flex items-center justify-between text-muted text-xs font-medium">
+            <span>Booking Hari Ini</span>
+            <span class="w-2 h-2 rounded-full bg-primary"></span>
+          </div>
+          <div class="mt-2 text-2xl sm:text-3xl font-extrabold text-ink">{{ stats.bookingHariIni }}</div>
+          <p class="text-[11px] text-muted mt-1">Jadwal perkuliahan aktif</p>
+        </div>
+
+        <!-- 2. Menunggu Persetujuan -->
+        <div class="card p-4 sm:p-5 bg-white border border-border rounded-xl shadow-xs stat-glow-warning">
+          <div class="flex items-center justify-between text-muted text-xs font-medium">
+            <span>Menunggu ACC</span>
+            <span class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
+          </div>
+          <div class="mt-2 text-2xl sm:text-3xl font-extrabold text-yellow-800">{{ stats.bookingMenunggu }}</div>
+          <p class="text-[11px] text-muted mt-1">Dalam antrean dosen</p>
+        </div>
+
+        <!-- 3. Ruangan Terpakai Jam Ini -->
+        <div class="card p-4 sm:p-5 bg-white border border-border rounded-xl shadow-xs stat-glow-info">
+          <div class="flex items-center justify-between text-muted text-xs font-medium">
+            <span>Ruang Terpakai</span>
+            <span class="text-xs text-blue-600 font-bold">Live</span>
+          </div>
+          <div class="mt-2 text-2xl sm:text-3xl font-extrabold text-blue-900">
+            {{ stats.ruanganTerpakai }} <span class="text-xs font-normal text-muted">/ {{ stats.totalRuangan }}</span>
+          </div>
+          <p class="text-[11px] text-muted mt-1">Gedung Elektro & Sipil</p>
+        </div>
+
+        <!-- 4. Akun Menunggu Verifikasi -->
+        <a
+          :href="routes.admin.manajemenAkun"
+          class="card p-4 sm:p-5 bg-white border border-border rounded-xl shadow-xs hover:border-primary transition group cursor-pointer"
+          :class="stats.akunMenungguVerifikasi > 0 ? 'stat-glow-warning' : ''"
+        >
+          <div class="flex items-center justify-between text-muted text-xs font-medium">
+            <span>Verifikasi Akun</span>
+            <span v-if="stats.akunMenungguVerifikasi > 0" class="badge badge-warning text-[10px]">Perlu ACC</span>
+          </div>
+          <div class="mt-2 text-2xl sm:text-3xl font-extrabold text-ink group-hover:text-primary transition">
+            {{ stats.akunMenungguVerifikasi }}
+          </div>
+          <p class="text-[11px] text-muted mt-1">Pendaftaran user baru &rarr;</p>
+        </a>
+
+        <!-- 5. Notifikasi Pemborosan (Fallback) -->
+        <a
+          :href="routes.admin.notifikasiPemborosan"
+          class="card p-4 sm:p-5 bg-white border border-border rounded-xl shadow-xs hover:border-red-500 transition group cursor-pointer col-span-2 md:col-span-1"
+          :class="stats.notifikasiPemborosan > 0 ? 'stat-glow-danger' : ''"
+        >
+          <div class="flex items-center justify-between text-muted text-xs font-medium">
+            <span>Pemborosan Ruang</span>
+            <span v-if="stats.notifikasiPemborosan > 0" class="w-2 h-2 rounded-full bg-red-600"></span>
+          </div>
+          <div class="mt-2 text-2xl sm:text-3xl font-extrabold text-red-900 group-hover:text-red-600 transition">
+            {{ stats.notifikasiPemborosan }}
+          </div>
+          <p class="text-[11px] text-muted mt-1">Booking fallback kapasitas &rarr;</p>
+        </a>
+      </div>
+
+      <!-- Grid 2 Kolom: Menu Cepat & Daftar Terkini -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Kolom Kiri (2 Kolom): Menu Administrasi & Booking Terkini -->
+        <div class="lg:col-span-2 space-y-8">
+          <!-- 1. Pintasan Menu Administrasi Utama -->
+          <div>
+            <h2 class="text-lg font-bold text-ink mb-4">Pusat Navigasi Administrasi</h2>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+              <!-- Master Ruangan -->
+              <a
+                :href="routes.admin.masterDataRuangan"
+                class="card p-4 bg-white border border-border rounded-xl shadow-xs hover:border-primary admin-shortcut-card group flex flex-col justify-between"
+              >
+                <div class="w-9 h-9 rounded-lg bg-primary-soft text-primary flex items-center justify-center font-bold mb-3">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                </div>
+                <div>
+                  <div class="text-xs font-bold text-ink group-hover:text-primary transition">Master Ruangan</div>
+                  <div class="text-[11px] text-muted mt-0.5">CRUD 48 ruang kelas</div>
+                </div>
+              </a>
+
+              <!-- Manajemen Akun -->
+              <a
+                :href="routes.admin.manajemenAkun"
+                class="card p-4 bg-white border border-border rounded-xl shadow-xs hover:border-primary admin-shortcut-card group flex flex-col justify-between"
+              >
+                <div class="w-9 h-9 rounded-lg bg-primary-soft text-primary flex items-center justify-center font-bold mb-3">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                </div>
+                <div>
+                  <div class="text-xs font-bold text-ink group-hover:text-primary transition">Manajemen Akun</div>
+                  <div class="text-[11px] text-muted mt-0.5">Verifikasi & ubah role</div>
+                </div>
+              </a>
+
+              <!-- Manajemen Relasi -->
+              <a
+                :href="routes.admin.manajemenRelasi"
+                class="card p-4 bg-white border border-border rounded-xl shadow-xs hover:border-primary admin-shortcut-card group flex flex-col justify-between"
+              >
+                <div class="w-9 h-9 rounded-lg bg-primary-soft text-primary flex items-center justify-center font-bold mb-3">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                </div>
+                <div>
+                  <div class="text-xs font-bold text-ink group-hover:text-primary transition">Manajemen Relasi</div>
+                  <div class="text-[11px] text-muted mt-0.5">Matkul ↔ Dosen ↔ PJ</div>
+                </div>
+              </a>
+
+              <!-- Semua Booking -->
+              <a
+                :href="routes.admin.semuaBooking"
+                class="card p-4 bg-white border border-border rounded-xl shadow-xs hover:border-primary admin-shortcut-card group flex flex-col justify-between"
+              >
+                <div class="w-9 h-9 rounded-lg bg-primary-soft text-primary flex items-center justify-center font-bold mb-3">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                </div>
+                <div>
+                  <div class="text-xs font-bold text-ink group-hover:text-primary transition">Semua Booking</div>
+                  <div class="text-[11px] text-muted mt-0.5">Pantau & batalkan ACC</div>
+                </div>
+              </a>
+
+              <!-- Reservasi Paksa -->
+              <a
+                :href="routes.admin.reservasiPaksa"
+                class="card p-4 bg-white border border-border rounded-xl shadow-xs hover:border-red-500 admin-shortcut-card group flex flex-col justify-between"
+              >
+                <div class="w-9 h-9 rounded-lg bg-red-100 text-red-700 flex items-center justify-center font-bold mb-3">
+                  ⚡
+                </div>
+                <div>
+                  <div class="text-xs font-bold text-ink group-hover:text-red-700 transition">Reservasi Paksa</div>
+                  <div class="text-[11px] text-muted mt-0.5">Bypass darurat dekanat</div>
+                </div>
+              </a>
+
+              <!-- Notifikasi Pemborosan -->
+              <a
+                :href="routes.admin.notifikasiPemborosan"
+                class="card p-4 bg-white border border-border rounded-xl shadow-xs hover:border-primary admin-shortcut-card group flex flex-col justify-between"
+              >
+                <div class="w-9 h-9 rounded-lg bg-primary-soft text-primary flex items-center justify-center font-bold mb-3">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                </div>
+                <div>
+                  <div class="text-xs font-bold text-ink group-hover:text-primary transition">Pemborosan Ruang</div>
+                  <div class="text-[11px] text-muted mt-0.5">Audit booking fallback</div>
+                </div>
+              </a>
+
+              <!-- Log Aktivitas -->
+              <a
+                :href="routes.admin.logAktivitas"
+                class="card p-4 bg-white border border-border rounded-xl shadow-xs hover:border-primary admin-shortcut-card group flex flex-col justify-between"
+              >
+                <div class="w-9 h-9 rounded-lg bg-primary-soft text-primary flex items-center justify-center font-bold mb-3">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </div>
+                <div>
+                  <div class="text-xs font-bold text-ink group-hover:text-primary transition">Log Aktivitas</div>
+                  <div class="text-[11px] text-muted mt-0.5">Audit trail sistem</div>
+                </div>
+              </a>
+
+              <!-- Statistik & Laporan -->
+              <a
+                :href="routes.admin.statistikLaporan"
+                class="card p-4 bg-white border border-border rounded-xl shadow-xs hover:border-primary admin-shortcut-card group flex flex-col justify-between"
+              >
+                <div class="w-9 h-9 rounded-lg bg-primary-soft text-primary flex items-center justify-center font-bold mb-3">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                </div>
+                <div>
+                  <div class="text-xs font-bold text-ink group-hover:text-primary transition">Statistik & Laporan</div>
+                  <div class="text-[11px] text-muted mt-0.5">Grafik okupansi & CSV</div>
+                </div>
+              </a>
+            </div>
+          </div>
+
+          <!-- 2. Permohonan Booking Terbaru -->
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-lg font-bold text-ink">Permohonan Reservasi Terkini</h2>
+              <a :href="routes.admin.semuaBooking" class="text-xs font-semibold text-primary hover:underline">
+                Lihat Semua &rarr;
+              </a>
+            </div>
+
+            <div class="card bg-white border border-border rounded-xl shadow-xs overflow-hidden divide-y divide-border">
+              <div
+                v-for="b in recentBookings"
+                :key="b.id"
+                class="p-4 hover:bg-surface transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+              >
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span
+                      class="badge text-[10px]"
+                      :class="{
+                        'badge-warning': b.status === 'menunggu',
+                        'badge-success': b.status === 'disetujui',
+                        'badge-danger': b.status === 'ditolak',
+                        'badge-info': b.status === 'selesai' || b.status === 'dibatalkan'
+                      }"
+                    >
+                      {{ b.status }}
+                    </span>
+                    <span class="text-xs font-bold text-ink truncate">{{ getCourseName(b.courseId) }}</span>
+                    <span v-if="b.isPaksa" class="badge badge-danger text-[9px]">Darurat</span>
+                  </div>
+                  <div class="text-xs text-muted flex items-center gap-2 flex-wrap">
+                    <span>Ruang <strong>{{ getRoomCode(b.ruanganId) }}</strong></span>
+                    <span>&bull;</span>
+                    <span>{{ formatDate(b.tanggal) }} ({{ formatTime(b.jamMulai, b.jamSelesai) }})</span>
+                    <span>&bull;</span>
+                    <span>PJ: {{ getUserName(b.userId) }}</span>
+                  </div>
+                </div>
+
+                <a :href="routes.admin.semuaBooking" class="btn btn-secondary text-xs py-1.5 px-3 flex-shrink-0">
+                  Kelola
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kolom Kanan (1 Kolom): Audit Log Terkini & Informasi Sistem -->
+        <div class="space-y-6">
+          <!-- Log Aktivitas Terkini -->
+          <div>
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-lg font-bold text-ink">Log Aktivitas Terbaru</h2>
+              <a :href="routes.admin.logAktivitas" class="text-xs font-semibold text-primary hover:underline">
+                Semua Log &rarr;
+              </a>
+            </div>
+
+            <div class="card bg-white border border-border rounded-xl shadow-xs overflow-hidden divide-y divide-border">
+              <div
+                v-for="log in recentLogs"
+                :key="log.id"
+                class="p-3.5 hover:bg-surface transition text-xs"
+              >
+                <div class="flex items-center justify-between mb-1">
+                  <span class="badge text-[10px]" :class="getActionBadgeClass(log.action)">
+                    {{ log.action }}
+                  </span>
+                  <span class="text-[10px] text-muted">{{ formatDateTime(log.createdAt) }}</span>
+                </div>
+                <div class="font-bold text-ink">{{ log.userName }} ({{ log.role }})</div>
+                <div class="text-muted mt-0.5 text-[11px] leading-relaxed">{{ log.detail }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Status Denah Kampus -->
+          <div class="card p-5 bg-white border border-border rounded-xl shadow-xs">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-primary mb-3">
+              Informasi Pemetaan Ruangan
+            </h3>
+            <div class="space-y-2.5 text-xs">
+              <div class="flex justify-between items-center py-1 border-b border-border">
+                <span class="text-muted">Gedung L (Rumpun Elektro)</span>
+                <span class="font-bold text-ink">4 Lantai &bull; 24 Ruang</span>
+              </div>
+              <div class="flex justify-between items-center py-1 border-b border-border">
+                <span class="text-muted">Gedung L (Rumpun Sipil)</span>
+                <span class="font-bold text-ink">4 Lantai &bull; 24 Ruang</span>
+              </div>
+              <div class="flex justify-between items-center py-1">
+                <span class="text-muted">Total Seluruh Ruang Kampus</span>
+                <span class="font-bold text-primary">48 Ruangan Aktif</span>
+              </div>
+            </div>
+            <a :href="routes.public.denah" target="_blank" class="btn btn-secondary w-full text-xs py-2 mt-4 text-center">
+              Buka Denah 2D Interaktif &rarr;
+            </a>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-xs text-muted border-t border-border bg-white mt-12">
+      &copy; 2024 Universitas Negeri Jakarta &mdash; Sistem Informasi Pemetaan & Reservasi Ruang Kelas
+    </footer>
+  </div>
+
+  <!-- Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.5.43/dist/vue.global.prod.js"></script>
+  <script src="../assets/js/core/config.js"></script>
+  <script src="../assets/js/core/routes.js"></script>
+  <script src="../assets/js/core/utils.js"></script>
+  <script src="../assets/js/core/store.js"></script>
+  <script src="../assets/js/data/buildings.js"></script>
+  <script src="../assets/js/data/rooms.js"></script>
+  <script src="../assets/js/data/users.js"></script>
+  <script src="../assets/js/data/courses.js"></script>
+  <script src="../assets/js/data/relations.js"></script>
+  <script src="../assets/js/data/bookings.js"></script>
+  <script src="../assets/js/data/notifications.js"></script>
+  <script src="../assets/js/data/logs.js"></script>
+  <script src="../assets/js/core/api.js"></script>
+  <script src="../assets/js/core/auth.js"></script>
+  <script src="../assets/js/core/guard.js"></script>
+  <script src="../navigation/navbar-admin.js"></script>
+  <script src="../assets/js/pages/admin/dashboard-admin.js"></script>
+</body>
+</html>

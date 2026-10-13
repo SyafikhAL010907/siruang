@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Daftar ACC Ruangan Dosen | Reservasi Ruangan UNJ</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="../assets/js/core/tailwind-config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/global.css" />
+  <link rel="stylesheet" href="../assets/css/dosen/daftar-acc-ruangan.css" />
+</head>
+<body class="bg-surface text-ink antialiased" style="font-family:'Inter',system-ui,sans-serif;">
+  <div id="app" v-cloak class="min-h-screen flex flex-col justify-between">
+    <!-- Navbar Dosen -->
+    <app-navbar></app-navbar>
+
+    <!-- Konten Utama -->
+    <main class="flex-1 mx-auto max-w-7xl w-full px-4 py-6 sm:py-8">
+      <!-- Breadcrumb -->
+      <nav class="flex items-center text-xs text-muted mb-4 gap-1.5" aria-label="Breadcrumb">
+        <a :href="routes.public.landing" class="hover:text-primary">Beranda</a>
+        <span>/</span>
+        <a :href="routes.dosen.dashboardPersetujuan" class="hover:text-primary">Dashboard Persetujuan</a>
+        <span>/</span>
+        <span class="text-ink font-medium">Daftar ACC Ruangan</span>
+      </nav>
+
+      <!-- Header Halaman -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-ink">
+            Daftar Persetujuan (ACC) Ruangan
+          </h1>
+          <p class="text-xs sm:text-sm text-muted mt-1">
+            Tinjau seluruh permohonan penggunaan ruang kuliah dari penanggung jawab kelas untuk mata kuliah Anda.
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <a :href="routes.dosen.riwayatKeputusan" class="btn btn-secondary text-xs py-2 px-3">
+            Riwayat Keputusan &rarr;
+          </a>
+        </div>
+      </div>
+
+      <!-- 3 Tab Status (Menunggu, Disetujui, Ditolak) -->
+      <div class="flex border-b border-border mb-6 gap-2 sm:gap-6 overflow-x-auto">
+        <button
+          type="button"
+          @click="setTab('menunggu')"
+          class="pb-3 text-sm font-semibold flex items-center gap-2 tab-btn whitespace-nowrap"
+          :class="{ active: activeTab === 'menunggu' }"
+        >
+          <span>Menunggu Tanggapan</span>
+          <span
+            class="tab-badge"
+            :class="activeTab === 'menunggu' ? 'bg-yellow-100 text-yellow-800 font-bold' : 'bg-surface text-muted border border-border'"
+          >
+            {{ tabCounts.menunggu }}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          @click="setTab('disetujui')"
+          class="pb-3 text-sm font-semibold flex items-center gap-2 tab-btn whitespace-nowrap"
+          :class="{ active: activeTab === 'disetujui' }"
+        >
+          <span>Disetujui</span>
+          <span
+            class="tab-badge"
+            :class="activeTab === 'disetujui' ? 'bg-emerald-100 text-emerald-800 font-bold' : 'bg-surface text-muted border border-border'"
+          >
+            {{ tabCounts.disetujui }}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          @click="setTab('ditolak')"
+          class="pb-3 text-sm font-semibold flex items-center gap-2 tab-btn whitespace-nowrap"
+          :class="{ active: activeTab === 'ditolak' }"
+        >
+          <span>Ditolak</span>
+          <span
+            class="tab-badge"
+            :class="activeTab === 'ditolak' ? 'bg-red-100 text-red-800 font-bold' : 'bg-surface text-muted border border-border'"
+          >
+            {{ tabCounts.ditolak }}
+          </span>
+        </button>
+      </div>
+
+      <!-- Toolbar Filter & Pencarian -->
+      <div class="card p-4 bg-white border border-border rounded-xl shadow-xs mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <!-- Input Search -->
+        <div class="relative flex-1">
+          <input
+            type="text"
+            v-model="searchQuery"
+            placeholder="Cari mata kuliah, ruangan, nama PJ, alasan..."
+            class="form-input text-xs pl-9 pr-4 py-2 w-full"
+          />
+          <svg class="absolute left-3 top-2.5 text-muted pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+
+        <!-- Filter Tanggal -->
+        <div class="flex items-center gap-2">
+          <label for="filter-date" class="text-xs text-muted whitespace-nowrap hidden sm:inline">Tanggal:</label>
+          <input
+            id="filter-date"
+            type="date"
+            v-model="filterDate"
+            class="form-input text-xs py-2 px-3 w-auto"
+          />
+          <button
+            v-if="filterDate || searchQuery"
+            type="button"
+            @click="filterDate = ''; searchQuery = ''"
+            class="btn btn-secondary text-xs py-2 px-3 whitespace-nowrap"
+            title="Reset Filter"
+          >
+            Reset
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div v-if="loading" class="card p-12 bg-white border border-border rounded-xl text-center">
+        <div class="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-3"></div>
+        <p class="text-xs text-muted">Memuat daftar pengajuan...</p>
+      </div>
+
+      <!-- Empty State -->
+      <div v-else-if="filteredBookings.length === 0" class="card p-12 bg-white border border-border rounded-xl text-center shadow-xs">
+        <div class="w-12 h-12 rounded-full bg-surface text-muted border border-border flex items-center justify-center mx-auto mb-3">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        </div>
+        <h3 class="text-base font-bold text-ink">Tidak Ada Pengajuan</h3>
+        <p class="text-xs text-muted max-w-sm mx-auto mt-1">
+          Tidak ditemukan pengajuan ruangan berstatus <strong>{{ activeTab }}</strong> yang sesuai dengan kriteria filter saat ini.
+        </p>
+      </div>
+
+      <!-- Tabel Daftar Pengajuan (Desktop & Tablet) -->
+      <div v-else class="space-y-4">
+        <!-- Tampilan Tabel untuk Layar >= sm -->
+        <div class="hidden sm:block card bg-white border border-border rounded-xl shadow-xs overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-ink">
+              <thead class="bg-primary-soft text-primary font-bold uppercase tracking-wider text-[11px] border-b border-border">
+                <tr>
+                  <th class="py-3.5 px-4 w-12 text-center">No</th>
+                  <th class="py-3.5 px-4">Mata Kuliah & Pemohon</th>
+                  <th class="py-3.5 px-4">Ruangan</th>
+                  <th class="py-3.5 px-4">Tanggal & Waktu</th>
+                  <th class="py-3.5 px-4 text-center">Kapasitas</th>
+                  <th class="py-3.5 px-4 text-center">Status</th>
+                  <th class="py-3.5 px-4 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border">
+                <tr
+                  v-for="(b, idx) in paginatedBookings"
+                  :key="b.id"
+                  @click="goToDetail(b.id)"
+                  class="hover:bg-surface transition cursor-pointer group"
+                >
+                  <!-- No -->
+                  <td class="py-3.5 px-4 text-center text-muted font-medium">
+                    {{ (currentPage - 1) * perPage + idx + 1 }}
+                  </td>
+
+                  <!-- Mata Kuliah & Pemohon -->
+                  <td class="py-3.5 px-4">
+                    <div class="font-bold text-ink text-sm group-hover:text-primary transition">
+                      {{ getCourseName(b.courseId) }}
+                    </div>
+                    <div class="text-[11px] text-muted mt-0.5">
+                      PJ: <strong class="text-ink font-semibold">{{ getRequesterName(b.userId) }}</strong>
+                      <span v-if="getRequesterNim(b.userId)">({{ getRequesterNim(b.userId) }})</span>
+                    </div>
+                    <div v-if="b.isFallback" class="mt-1">
+                      <span class="badge badge-danger text-[9px] py-0.5">⚠️ Fallback Ruangan</span>
+                    </div>
+                  </td>
+
+                  <!-- Ruangan -->
+                  <td class="py-3.5 px-4">
+                    <div class="font-bold text-ink text-sm">{{ getRoomCode(b.ruanganId) }}</div>
+                    <div class="text-[11px] text-muted">{{ getRoomFloor(b.ruanganId) }}</div>
+                  </td>
+
+                  <!-- Tanggal & Jam -->
+                  <td class="py-3.5 px-4">
+                    <div class="font-medium text-ink">{{ formatDate(b.tanggal) }}</div>
+                    <div class="text-[11px] text-muted">{{ formatTime(b.jamMulai, b.jamSelesai) }} WIB</div>
+                  </td>
+
+                  <!-- Kapasitas Rombel -->
+                  <td class="py-3.5 px-4 text-center">
+                    <span class="inline-flex px-2 py-0.5 rounded-md bg-surface border border-border text-xs font-semibold text-ink">
+                      {{ b.jumlahKelas }} Rombel
+                    </span>
+                  </td>
+
+                  <!-- Status -->
+                  <td class="py-3.5 px-4 text-center">
+                    <span
+                      class="badge text-[11px] font-semibold"
+                      :class="{
+                        'badge-warning': b.status === 'menunggu',
+                        'badge-success': b.status === 'disetujui',
+                        'badge-danger': b.status === 'ditolak'
+                      }"
+                    >
+                      {{ b.status === 'menunggu' ? 'Menunggu' : (b.status === 'disetujui' ? 'Disetujui' : 'Ditolak') }}
+                    </span>
+                  </td>
+
+                  <!-- Aksi Cepat -->
+                  <td class="py-3.5 px-4 text-right" @click.stop>
+                    <div class="inline-flex items-center gap-1.5 justify-end">
+                      <!-- Tombol ACC & Tolak jika berstatus Menunggu -->
+                      <template v-if="b.status === 'menunggu'">
+                        <button
+                          type="button"
+                          @click="quickApprove(b, $event)"
+                          class="btn btn-primary text-xs py-1.5 px-2.5 font-semibold shadow-xs"
+                          :disabled="actionLoading"
+                          title="Setujui Pengajuan"
+                        >
+                          ACC
+                        </button>
+                        <button
+                          type="button"
+                          @click="openRejectModal(b, $event)"
+                          class="btn btn-danger text-xs py-1.5 px-2.5 font-semibold"
+                          :disabled="actionLoading"
+                          title="Tolak Pengajuan"
+                        >
+                          Tolak
+                        </button>
+                      </template>
+                      <!-- Tombol Detail -->
+                      <a
+                        :href="routes.dosen.detailPengajuan + '?id=' + b.id"
+                        class="btn btn-secondary text-xs py-1.5 px-2.5"
+                        title="Lihat Detail Lengkap"
+                      >
+                        Detail
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tampilan Mobile (Kartu) untuk Layar < sm -->
+        <div class="sm:hidden space-y-3">
+          <div
+            v-for="(b, idx) in paginatedBookings"
+            :key="b.id"
+            @click="goToDetail(b.id)"
+            class="card p-4 bg-white border border-border rounded-xl shadow-xs hover:border-primary transition"
+          >
+            <div class="flex items-start justify-between mb-2">
+              <span
+                class="badge text-[10px] font-bold"
+                :class="{
+                  'badge-warning': b.status === 'menunggu',
+                  'badge-success': b.status === 'disetujui',
+                  'badge-danger': b.status === 'ditolak'
+                }"
+              >
+                {{ b.status === 'menunggu' ? 'Menunggu' : (b.status === 'disetujui' ? 'Disetujui' : 'Ditolak') }}
+              </span>
+              <span class="text-xs font-semibold text-muted">#{{ (currentPage - 1) * perPage + idx + 1 }}</span>
+            </div>
+
+            <h3 class="text-base font-bold text-ink mb-1">{{ getCourseName(b.courseId) }}</h3>
+            <div class="text-xs text-muted mb-3 space-y-0.5">
+              <div><strong>Ruang:</strong> {{ getRoomCode(b.ruanganId) }} &bull; {{ b.jumlahKelas }} Rombel</div>
+              <div><strong>Waktu:</strong> {{ formatDate(b.tanggal) }} ({{ formatTime(b.jamMulai, b.jamSelesai) }})</div>
+              <div><strong>Pemohon:</strong> {{ getRequesterName(b.userId) }}</div>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-2 border-t border-border" @click.stop>
+              <template v-if="b.status === 'menunggu'">
+                <button
+                  type="button"
+                  @click="openRejectModal(b, $event)"
+                  class="btn btn-danger text-xs py-1.5 px-3"
+                  :disabled="actionLoading"
+                >
+                  Tolak
+                </button>
+                <button
+                  type="button"
+                  @click="quickApprove(b, $event)"
+                  class="btn btn-primary text-xs py-1.5 px-3 font-semibold"
+                  :disabled="actionLoading"
+                >
+                  ACC
+                </button>
+              </template>
+              <a :href="routes.dosen.detailPengajuan + '?id=' + b.id" class="btn btn-secondary text-xs py-1.5 px-3">
+                Detail
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Paginasi -->
+        <div v-if="totalPages > 1" class="pagination-container">
+          <div class="text-xs text-muted">
+            Menampilkan halaman <strong>{{ currentPage }}</strong> dari <strong>{{ totalPages }}</strong> (Total {{ filteredBookings.length }} data)
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button
+              type="button"
+              @click="prevPage"
+              :disabled="currentPage === 1"
+              class="btn btn-secondary text-xs py-1.5 px-3"
+            >
+              &larr; Sebelumnya
+            </button>
+            <button
+              type="button"
+              @click="nextPage"
+              :disabled="currentPage === totalPages"
+              class="btn btn-secondary text-xs py-1.5 px-3"
+            >
+              Selanjutnya &rarr;
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-xs text-muted border-t border-border bg-white mt-12">
+      &copy; 2024 Universitas Negeri Jakarta &mdash; Sistem Informasi Pemetaan & Reservasi Ruang Kelas
+    </footer>
+
+    <!-- Modal Konfirmasi Penolakan Pengajuan 🆕 -->
+    <div
+      v-if="rejectModalOpen"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 backdrop-blur-xs"
+      @click.self="closeRejectModal"
+    >
+      <div class="card p-6 bg-white border border-border rounded-2xl shadow-xl max-w-md w-full">
+        <div class="flex items-start justify-between mb-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-red-100 text-red-700 flex items-center justify-center font-bold">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-ink">Tolak Pengajuan Ruangan</h3>
+              <p class="text-xs text-muted">Berikan alasan yang jelas kepada pemohon</p>
+            </div>
+          </div>
+          <button @click="closeRejectModal" class="text-muted hover:text-ink text-lg">&times;</button>
+        </div>
+
+        <div v-if="selectedBooking" class="p-3 bg-surface rounded-xl border border-border text-xs mb-4 space-y-1">
+          <div><strong>Mata Kuliah:</strong> {{ getCourseName(selectedBooking.courseId) }}</div>
+          <div><strong>Ruangan:</strong> {{ getRoomCode(selectedBooking.ruanganId) }} &bull; {{ formatDate(selectedBooking.tanggal) }}</div>
+          <div><strong>Pemohon:</strong> {{ getRequesterName(selectedBooking.userId) }}</div>
+        </div>
+
+        <div class="form-group mb-4">
+          <label for="alasan-tolak-input" class="form-label text-xs">
+            Alasan Penolakan <span class="required">* (Minimal 10 karakter)</span>
+          </label>
+          <textarea
+            id="alasan-tolak-input"
+            v-model="alasanTolak"
+            rows="3"
+            class="form-textarea text-xs"
+            :class="{ 'is-error': rejectError }"
+            placeholder="Contoh: Jadwal bertabrakan dengan agenda rapat prodi..."
+          ></textarea>
+          <p v-if="rejectError" class="form-error text-[11px] mt-1">{{ rejectError }}</p>
+          <p class="text-[11px] text-muted mt-1">Alasan penolakan akan terkirim ke notifikasi pemohon secara otomatis.</p>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-border">
+          <button
+            type="button"
+            @click="closeRejectModal"
+            class="btn btn-secondary text-xs py-2 px-3"
+            :disabled="actionLoading"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            @click="confirmReject"
+            class="btn btn-danger text-xs py-2 px-4 font-semibold"
+            :disabled="actionLoading"
+          >
+            <span v-if="actionLoading">Memproses...</span>
+            <span v-else>Konfirmasi Tolak</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.5.43/dist/vue.global.prod.js"></script>
+  <script src="../assets/js/core/config.js"></script>
+  <script src="../assets/js/core/routes.js"></script>
+  <script src="../assets/js/core/utils.js"></script>
+  <script src="../assets/js/core/store.js"></script>
+  <script src="../assets/js/data/buildings.js"></script>
+  <script src="../assets/js/data/rooms.js"></script>
+  <script src="../assets/js/data/users.js"></script>
+  <script src="../assets/js/data/courses.js"></script>
+  <script src="../assets/js/data/relations.js"></script>
+  <script src="../assets/js/data/bookings.js"></script>
+  <script src="../assets/js/data/notifications.js"></script>
+  <script src="../assets/js/data/logs.js"></script>
+  <script src="../assets/js/core/api.js"></script>
+  <script src="../assets/js/core/auth.js"></script>
+  <script src="../assets/js/core/guard.js"></script>
+  <script src="../navigation/navbar-dosen.js"></script>
+  <script src="../assets/js/pages/dosen/daftar-acc-ruangan.js"></script>
+</body>
+</html>

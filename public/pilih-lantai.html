@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pilih Lantai | Reservasi Ruangan UNJ</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="../assets/js/core/tailwind-config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/global.css" />
+  <link rel="stylesheet" href="../assets/css/public/pilih-lantai.css" />
+</head>
+<body class="bg-surface text-ink antialiased" style="font-family:'Inter',system-ui,sans-serif;">
+  <div id="app" v-cloak class="min-h-screen flex flex-col justify-between">
+    <!-- Navbar Otomatis Sesuai Role -->
+    <app-navbar></app-navbar>
+
+    <!-- Konten Utama -->
+    <main class="flex-1 mx-auto max-w-6xl w-full px-4 py-8 sm:py-12">
+      <!-- Breadcrumb -->
+      <nav class="flex items-center text-xs text-muted mb-4 gap-1.5" aria-label="Breadcrumb">
+        <a :href="routes.public.landing" class="hover:text-primary">Beranda</a>
+        <span>/</span>
+        <a :href="routes.public.pilihGedung" class="hover:text-primary">Pilih Gedung</a>
+        <span>/</span>
+        <span class="text-ink font-medium">{{ buildingInfo.name }}</span>
+      </nav>
+
+      <!-- Header Pilihan Gedung & Switcher -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-2xl sm:text-3xl font-bold text-ink">Pilih Lantai &mdash; {{ buildingInfo.name }}</h1>
+            <span class="badge badge-info">4 Lantai</span>
+          </div>
+          <p class="text-sm text-muted mt-1">
+            {{ buildingInfo.description }}
+          </p>
+        </div>
+
+        <!-- Beralih Gedung Cepat -->
+        <div class="flex items-center bg-white p-1 rounded-xl border border-border shadow-xs">
+          <button
+            type="button"
+            @click="switchBuilding('L')"
+            class="px-4 py-2 text-xs font-bold rounded-lg transition"
+            :class="selectedGedung === 'L' ? 'bg-primary text-white shadow-xs' : 'text-muted hover:text-ink'"
+          >
+            L (Rumpun Elektro)
+          </button>
+          <button
+            type="button"
+            @click="switchBuilding('LS')"
+            class="px-4 py-2 text-xs font-bold rounded-lg transition"
+            :class="selectedGedung === 'LS' ? 'bg-primary text-white shadow-xs' : 'text-muted hover:text-ink'"
+          >
+            L (Rumpun Sipil)
+          </button>
+        </div>
+      </div>
+
+      <!-- Dropdown Filter Cepat untuk Mobile -->
+      <div class="sm:hidden mb-6">
+        <label for="select-lantai" class="form-label text-xs mb-1.5 font-semibold text-ink">Pilih Cepat Lantai:</label>
+        <select
+          id="select-lantai"
+          class="form-select text-sm"
+          @change="goToFloor($event.target.value)"
+        >
+          <option value="" disabled selected>-- Pilih Lantai --</option>
+          <option v-for="f in floorList" :key="f.lantai" :value="f.lantai">
+            Lantai {{ f.lantai }} ({{ f.totalRooms }} Ruangan)
+          </option>
+        </select>
+      </div>
+
+      <!-- Grid Kartu Lantai -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+        <div
+          v-for="floor in floorList"
+          :key="floor.lantai"
+          class="card p-5 bg-white border border-border rounded-xl shadow-xs hover:shadow-md hover:border-primary transition cursor-pointer flex flex-col justify-between group"
+          @click="goToFloor(floor.lantai)"
+        >
+          <div>
+            <div class="flex items-start justify-between mb-3">
+              <div class="w-10 h-10 rounded-xl bg-primary-soft text-primary font-bold flex items-center justify-center text-sm group-hover:bg-primary group-hover:text-white transition">
+                Lt {{ floor.lantai }}
+              </div>
+              <span class="text-xs font-semibold text-muted bg-surface px-2.5 py-1 rounded-md border border-border">
+                {{ floor.totalRooms }} Ruangan
+              </span>
+            </div>
+
+            <h3 class="text-lg font-bold text-ink group-hover:text-primary transition mb-1">
+              Lantai {{ floor.lantai }}
+            </h3>
+            <p class="text-xs text-muted mb-4">
+              Denah tata ruang kelas Lantai {{ floor.lantai }} Gedung {{ selectedGedung }}.
+            </p>
+
+            <!-- Mini Ringkasan Status Okupansi -->
+            <div class="grid grid-cols-3 gap-1.5 p-2 bg-surface rounded-lg border border-border text-center text-xs mb-4">
+              <div class="text-emerald-700 font-semibold" title="Tersedia">
+                <div>{{ floor.stats.tersedia }}</div>
+                <div class="text-[10px] text-muted font-normal flex items-center justify-center gap-0.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                  Kosong
+                </div>
+              </div>
+              <div class="text-yellow-700 font-semibold" title="Sebagian">
+                <div>{{ floor.stats.sebagian }}</div>
+                <div class="text-[10px] text-muted font-normal flex items-center justify-center gap-0.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>
+                  Sebagian
+                </div>
+              </div>
+              <div class="text-red-700 font-semibold" title="Terpakai">
+                <div>{{ floor.stats.terpakai }}</div>
+                <div class="text-[10px] text-muted font-normal flex items-center justify-center gap-0.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-red-600"></span>
+                  Terisi
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tombol Ke Denah -->
+          <a
+            :href="routes.public.denah + '?gedung=' + selectedGedung + '&lantai=' + floor.lantai"
+            class="btn btn-secondary btn-sm w-full font-semibold group-hover:border-primary flex items-center justify-center gap-1.5"
+            @click.stop
+          >
+            <span>Buka Denah 2D</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </a>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-xs text-muted border-t border-border bg-white mt-12">
+      &copy; 2024 Universitas Negeri Jakarta &mdash; Sistem Informasi Pemetaan & Reservasi Ruang Kelas
+    </footer>
+  </div>
+
+  <!-- Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.5.43/dist/vue.global.prod.js"></script>
+  <script src="../assets/js/core/config.js"></script>
+  <script src="../assets/js/core/routes.js"></script>
+  <script src="../assets/js/core/utils.js"></script>
+  <script src="../assets/js/core/store.js"></script>
+  <script src="../assets/js/data/buildings.js"></script>
+  <script src="../assets/js/data/rooms.js"></script>
+  <script src="../assets/js/data/bookings.js"></script>
+  <script src="../assets/js/core/api.js"></script>
+  <script src="../assets/js/core/auth.js"></script>
+  <script src="../assets/js/core/guard.js"></script>
+  <script src="../navigation/nav-loader.js"></script>
+  <script src="../assets/js/pages/public/pilih-lantai.js"></script>
+</body>
+</html>

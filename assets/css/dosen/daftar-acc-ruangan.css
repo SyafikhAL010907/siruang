@@ -1,0 +1,20 @@
+/**
+ * daftar-acc-ruangan.css — Gaya halaman Daftar ACC Ruangan Dosen (Halaman 19)
+ */
+
+.tab-btn {
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.tab-btn.active {
+  color: var(--color-primary, #14532D);
+  border-bottom: 2px solid var(--color-primary, #14532D);
+  font-weight: 700;
+}
+
+.tab-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 9999px;
+}

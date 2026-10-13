@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Log Aktivitas Audit Sistem | Reservasi Ruangan UNJ</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="../assets/js/core/tailwind-config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/global.css" />
+  <link rel="stylesheet" href="../assets/css/admin/log-aktivitas.css" />
+</head>
+<body class="bg-surface text-ink antialiased" style="font-family:'Inter',system-ui,sans-serif;">
+  <div id="app" v-cloak class="min-h-screen flex flex-col justify-between">
+    <!-- Navbar Admin -->
+    <app-navbar></app-navbar>
+
+    <!-- Konten Utama -->
+    <main class="flex-1 mx-auto max-w-7xl w-full px-4 py-6 sm:py-8">
+      <!-- Breadcrumb -->
+      <nav class="flex items-center text-xs text-muted mb-4 gap-1.5" aria-label="Breadcrumb">
+        <a :href="routes.admin.dashboard" class="hover:text-primary">Admin</a>
+        <span>/</span>
+        <span class="text-ink font-medium">Log Aktivitas</span>
+      </nav>
+
+      <!-- Header Halaman -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-ink">
+            Audit Trail & Log Aktivitas Sistem
+          </h1>
+          <p class="text-xs sm:text-sm text-muted mt-1">
+            Rekam jejak seluruh transaksi data: autentikasi, pengajuan booking, persetujuan, pembatalan, modifikasi akun, dan reservasi darurat.
+          </p>
+        </div>
+        <div class="text-xs font-semibold text-muted bg-white px-3 py-1.5 rounded-lg border border-border shadow-xs">
+          🔒 Read-Only Audit Log
+        </div>
+      </div>
+
+      <!-- Toolbar Filter & Pencarian -->
+      <div class="card p-4 bg-white border border-border rounded-xl shadow-xs mb-6 grid grid-cols-1 sm:grid-cols-12 gap-3">
+        <!-- Input Search -->
+        <div class="sm:col-span-5 relative">
+          <input
+            type="text"
+            v-model="searchQuery"
+            placeholder="Cari pengguna, aksi, atau detail transaksi..."
+            class="form-input text-xs pl-9 pr-4 py-2 w-full"
+          />
+          <svg class="absolute left-3 top-2.5 text-muted pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+
+        <!-- Filter Aksi -->
+        <div class="sm:col-span-3">
+          <select v-model="filterAction" class="form-select text-xs py-2 w-full">
+            <option value="semua">Semua Kategori Aksi</option>
+            <option value="BOOKING">Semua Reservasi (Booking)</option>
+            <option value="APPROVE">Persetujuan (ACC)</option>
+            <option value="REJECT">Penolakan</option>
+            <option value="FORCE">Reservasi Paksa</option>
+            <option value="CANCEL">Pembatalan</option>
+            <option value="USER">Manajemen Pengguna</option>
+            <option value="ROOM">Master Ruangan</option>
+          </select>
+        </div>
+
+        <!-- Filter Tanggal & Reset -->
+        <div class="sm:col-span-4 flex items-center gap-2">
+          <input
+            type="date"
+            v-model="filterDate"
+            class="form-input text-xs py-2 w-full"
+          />
+          <button
+            v-if="filterAction !== 'semua' || filterDate || searchQuery"
+            type="button"
+            @click="filterAction = 'semua'; filterDate = ''; searchQuery = ''"
+            class="btn btn-secondary text-xs py-2 px-3 whitespace-nowrap"
+            title="Reset Filter"
+          >
+            Reset
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div v-if="loading" class="card p-12 bg-white border border-border rounded-xl text-center">
+        <div class="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-3"></div>
+        <p class="text-xs text-muted">Memuat catatan aktivitas audit...</p>
+      </div>
+
+      <!-- Empty State -->
+      <div v-else-if="filteredLogs.length === 0" class="card p-12 bg-white border border-border rounded-xl text-center shadow-xs">
+        <div class="w-12 h-12 rounded-full bg-surface text-muted border border-border flex items-center justify-center mx-auto mb-3">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>
+        </div>
+        <h3 class="text-base font-bold text-ink">Tidak Ada Log Ditemukan</h3>
+        <p class="text-xs text-muted max-w-sm mx-auto mt-1">
+          Tidak ada riwayat aktivitas yang sesuai dengan kriteria filter pencarian Anda.
+        </p>
+      </div>
+
+      <!-- Tabel Log Aktivitas (Desktop & Tablet) -->
+      <div v-else class="space-y-4">
+        <div class="hidden sm:block card bg-white border border-border rounded-xl shadow-xs overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-ink">
+              <thead class="bg-primary-soft text-primary font-bold uppercase tracking-wider text-[11px] border-b border-border">
+                <tr>
+                  <th class="py-3.5 px-4 w-12 text-center">No</th>
+                  <th class="py-3.5 px-4">Waktu Kejadian</th>
+                  <th class="py-3.5 px-4">Pengguna & Peran</th>
+                  <th class="py-3.5 px-4 text-center">Aksi (Action)</th>
+                  <th class="py-3.5 px-4">Objek Transaksi</th>
+                  <th class="py-3.5 px-4">Detail Keterangan</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border">
+                <tr
+                  v-for="(l, idx) in paginatedLogs"
+                  :key="l.id"
+                  class="log-row transition"
+                >
+                  <td class="py-3.5 px-4 text-center text-muted font-medium">
+                    {{ (currentPage - 1) * perPage + idx + 1 }}
+                  </td>
+                  <td class="py-3.5 px-4 text-muted whitespace-nowrap">
+                    <div class="font-mono text-ink font-semibold">{{ formatDateTime(l.createdAt) }}</div>
+                    <div class="text-[10px]">ID: {{ l.id }}</div>
+                  </td>
+                  <td class="py-3.5 px-4">
+                    <div class="font-bold text-ink">{{ l.userName }}</div>
+                    <div class="text-[10px] text-muted uppercase font-semibold">{{ l.role }}</div>
+                  </td>
+                  <td class="py-3.5 px-4 text-center">
+                    <span class="badge text-[10px] font-mono font-semibold" :class="getActionBadgeClass(l.action)">
+                      {{ l.action }}
+                    </span>
+                  </td>
+                  <td class="py-3.5 px-4">
+                    <span class="font-semibold text-ink">{{ l.object }}</span>
+                  </td>
+                  <td class="py-3.5 px-4 text-muted leading-relaxed">
+                    {{ l.detail }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tampilan Mobile (Kartu) -->
+        <div class="sm:hidden space-y-3">
+          <div
+            v-for="l in paginatedLogs"
+            :key="l.id"
+            class="card p-4 bg-white border border-border rounded-xl shadow-xs space-y-1.5"
+          >
+            <div class="flex items-start justify-between">
+              <span class="badge text-[10px] font-mono" :class="getActionBadgeClass(l.action)">
+                {{ l.action }}
+              </span>
+              <span class="text-[10px] text-muted font-mono">{{ formatDateTime(l.createdAt) }}</span>
+            </div>
+            <div class="text-xs font-bold text-ink">{{ l.userName }} <span class="text-muted font-normal">({{ l.role }})</span></div>
+            <div class="text-xs font-semibold text-primary">Objek: {{ l.object }}</div>
+            <p class="text-xs text-muted leading-relaxed">{{ l.detail }}</p>
+          </div>
+        </div>
+
+        <!-- Paginasi -->
+        <div v-if="totalPages > 1" class="pagination-container">
+          <div class="text-xs text-muted">
+            Menampilkan halaman <strong>{{ currentPage }}</strong> dari <strong>{{ totalPages }}</strong> (Total {{ filteredLogs.length }} entri log)
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button
+              type="button"
+              @click="prevPage"
+              :disabled="currentPage === 1"
+              class="btn btn-secondary text-xs py-1.5 px-3"
+            >
+              &larr; Sebelumnya
+            </button>
+            <button
+              type="button"
+              @click="nextPage"
+              :disabled="currentPage === totalPages"
+              class="btn btn-secondary text-xs py-1.5 px-3"
+            >
+              Selanjutnya &rarr;
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-xs text-muted border-t border-border bg-white mt-12">
+      &copy; 2024 Universitas Negeri Jakarta &mdash; Sistem Informasi Pemetaan & Reservasi Ruang Kelas
+    </footer>
+  </div>
+
+  <!-- Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.5.43/dist/vue.global.prod.js"></script>
+  <script src="../assets/js/core/config.js"></script>
+  <script src="../assets/js/core/routes.js"></script>
+  <script src="../assets/js/core/utils.js"></script>
+  <script src="../assets/js/core/store.js"></script>
+  <script src="../assets/js/data/buildings.js"></script>
+  <script src="../assets/js/data/rooms.js"></script>
+  <script src="../assets/js/data/users.js"></script>
+  <script src="../assets/js/data/courses.js"></script>
+  <script src="../assets/js/data/relations.js"></script>
+  <script src="../assets/js/data/bookings.js"></script>
+  <script src="../assets/js/data/notifications.js"></script>
+  <script src="../assets/js/data/logs.js"></script>
+  <script src="../assets/js/core/api.js"></script>
+  <script src="../assets/js/core/auth.js"></script>
+  <script src="../navigation/navbar-admin.js"></script>
+  <script src="../assets/js/pages/admin/log-aktivitas.js"></script>
+</body>
+</html>

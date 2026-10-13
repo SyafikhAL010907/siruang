@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Beranda | Sistem Informasi Pemetaan & Reservasi Ruang Kelas</title>
+  <meta name="description" content="Sistem Informasi Pemetaan & Reservasi Ruang Kelas Universitas Negeri Jakarta — Pantau ketersediaan ruangan secara real-time dan ajukan reservasi kelas dengan mudah." />
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="../assets/js/core/tailwind-config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/global.css" />
+  <link rel="stylesheet" href="../assets/css/public/landing.css" />
+</head>
+<body class="bg-surface text-ink antialiased" style="font-family:'Inter',system-ui,sans-serif;">
+  <div id="app" v-cloak class="min-h-screen flex flex-col justify-between">
+    <!-- Navbar Otomatis Sesuai Role -->
+    <app-navbar></app-navbar>
+
+    <!-- Konten Halaman Landing -->
+    <main class="flex-1">
+
+      <!-- ========== 1. Hero Section ========== -->
+      <section class="landing-hero">
+        <div class="hero-inner">
+          <!-- Badge Kampus -->
+          <div class="hero-badge">
+            <span class="hero-badge-dot"></span>
+            Universitas Negeri Jakarta &bull; Pemetaan Ruang Kelas Interaktif
+          </div>
+
+          <h1 class="hero-title">
+            Sistem Informasi Pemetaan
+            <span class="hero-title-accent">&amp; Reservasi Ruang Kelas</span>
+          </h1>
+
+          <p class="hero-subtitle">
+            Pantau ketersediaan ruang perkuliahan secara visual melalui denah interaktif, cek status okupansi secara real-time, dan ajukan pemesanan kelas dengan mudah.
+          </p>
+
+          <!-- Call To Action -->
+          <div class="hero-actions">
+            <a :href="routes.public.pilihGedung" class="hero-btn-primary">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="9"/>
+                <rect x="14" y="3" width="7" height="5"/>
+                <rect x="14" y="12" width="7" height="9"/>
+                <rect x="3" y="16" width="7" height="5"/>
+              </svg>
+              <span>Lihat Denah Ruangan</span>
+            </a>
+
+            <!-- Tombol jika sudah login -->
+            <a
+              v-if="currentUser"
+              :href="dashboardUrl"
+              class="hero-btn-secondary"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
+              </svg>
+              <span>Ke Dashboard ({{ roleLabel }})</span>
+            </a>
+
+            <!-- Tombol jika belum login (Guest) -->
+            <template v-else>
+              <a :href="routes.auth.login" class="hero-btn-secondary">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                  <polyline points="10 17 15 12 10 7"/>
+                  <line x1="15" y1="12" x2="3" y2="12"/>
+                </svg>
+                <span>Masuk Akun</span>
+              </a>
+              <a :href="routes.auth.signup" class="hero-btn-ghost">
+                <span>Daftar Baru &rarr;</span>
+              </a>
+            </template>
+          </div>
+
+          <!-- Scroll Indicator -->
+          <div class="hero-scroll-hint">
+            <div class="scroll-indicator">
+              <span>Scroll untuk lihat status ruangan</span>
+              <svg class="scroll-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 2. Ringkasan Real-Time per Gedung ========== -->
+      <section class="landing-stats">
+        <!-- Header -->
+        <div class="stats-header">
+          <div class="stats-title-group">
+            <div class="stats-title-row">
+              <h2 class="stats-title">Status Ketersediaan Real-Time</h2>
+              <span class="stats-live-badge">
+                <span class="stats-live-dot"></span>
+                Live
+              </span>
+            </div>
+            <p class="stats-date">
+              Data okupansi ruangan pada tanggal <strong>{{ currentDateFormatted }}</strong> pukul <strong>{{ currentHourFormatted }}</strong>
+            </p>
+          </div>
+          <a :href="routes.public.pilihGedung" class="stats-link">
+            Pilih Gedung & Denah
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </a>
+        </div>
+
+        <!-- Dua Kartu Gedung -->
+        <div class="gedung-grid">
+          <!-- Kartu Gedung L Elektro -->
+          <div class="gedung-card">
+            <div class="gedung-card-header">
+              <div>
+                <span class="gedung-label">Gedung L &bull; 4 Lantai</span>
+                <h3 class="gedung-name">Gedung L (Rumpun Elektro)</h3>
+                <p class="gedung-desc">Total 24 Ruang Kelas & Laboratorium Elektro</p>
+              </div>
+              <div class="gedung-icon">LE</div>
+            </div>
+
+            <!-- Mini Statistik Realtime -->
+            <div class="occ-stats">
+              <div class="occ-stat occ-stat-available">
+                <div class="occ-stat-number">{{ gedungLStats.tersedia }}</div>
+                <div class="occ-stat-label">
+                  <span class="occ-stat-dot"></span>
+                  Tersedia
+                </div>
+              </div>
+              <div class="occ-stat occ-stat-partial">
+                <div class="occ-stat-number">{{ gedungLStats.sebagian }}</div>
+                <div class="occ-stat-label">
+                  <span class="occ-stat-dot"></span>
+                  Sebagian
+                </div>
+              </div>
+              <div class="occ-stat occ-stat-occupied">
+                <div class="occ-stat-number">{{ gedungLStats.terpakai }}</div>
+                <div class="occ-stat-label">
+                  <span class="occ-stat-dot"></span>
+                  Terpakai
+                </div>
+              </div>
+            </div>
+
+            <!-- Tombol Buka Gedung L -->
+            <a :href="routes.public.pilihLantai + '?gedung=L'" class="gedung-cta">
+              <span>Buka Denah Rumpun Elektro</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+          </div>
+
+          <!-- Kartu Gedung L Sipil -->
+          <div class="gedung-card">
+            <div class="gedung-card-header">
+              <div>
+                <span class="gedung-label">Gedung L &bull; 4 Lantai</span>
+                <h3 class="gedung-name">Gedung L (Rumpun Sipil)</h3>
+                <p class="gedung-desc">Total 24 Ruang Kelas & Laboratorium Sipil</p>
+              </div>
+              <div class="gedung-icon">LS</div>
+            </div>
+
+            <!-- Mini Statistik Realtime -->
+            <div class="occ-stats">
+              <div class="occ-stat occ-stat-available">
+                <div class="occ-stat-number">{{ gedungLSStats.tersedia }}</div>
+                <div class="occ-stat-label">
+                  <span class="occ-stat-dot"></span>
+                  Tersedia
+                </div>
+              </div>
+              <div class="occ-stat occ-stat-partial">
+                <div class="occ-stat-number">{{ gedungLSStats.sebagian }}</div>
+                <div class="occ-stat-label">
+                  <span class="occ-stat-dot"></span>
+                  Sebagian
+                </div>
+              </div>
+              <div class="occ-stat occ-stat-occupied">
+                <div class="occ-stat-number">{{ gedungLSStats.terpakai }}</div>
+                <div class="occ-stat-label">
+                  <span class="occ-stat-dot"></span>
+                  Terpakai
+                </div>
+              </div>
+            </div>
+
+            <!-- Tombol Buka Gedung L Sipil -->
+            <a :href="routes.public.pilihLantai + '?gedung=LS'" class="gedung-cta">
+              <span>Buka Denah Rumpun Sipil</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 3. Fitur Keunggulan Sistem ========== -->
+      <section class="landing-features">
+        <div class="features-inner">
+          <div class="features-header">
+            <span class="features-label">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+              Keunggulan
+            </span>
+            <h2 class="features-title">Keunggulan Sistem Pemetaan & Reservasi</h2>
+            <p class="features-subtitle">Dirancang untuk efisiensi pemanfaatan ruang kelas di lingkungan Universitas Negeri Jakarta</p>
+          </div>
+
+          <div class="features-grid">
+            <!-- Feature 1: Indoor Mapping -->
+            <div class="feature-card">
+              <div class="feature-icon-wrap">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/>
+                  <line x1="3" y1="9" x2="21" y2="9"/>
+                  <line x1="9" y1="21" x2="9" y2="9"/>
+                </svg>
+              </div>
+              <h3 class="feature-name">Indoor Mapping 2D</h3>
+              <p class="feature-desc">Visualisasi spasial denah per lantai dengan kode warna ketersediaan intuitif, mempermudah identifikasi lokasi kelas secara presisi.</p>
+            </div>
+
+            <!-- Feature 2: Multi-Kelas -->
+            <div class="feature-card">
+              <div class="feature-icon-wrap">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+              </div>
+              <h3 class="feature-name">Multi-Kelas Fleksibel</h3>
+              <p class="feature-desc">Mendukung kapasitas 1 hingga 3 rombel kelas bersamaan dalam satu ruang besar tanpa risiko bentrok kapasitas berlebih.</p>
+            </div>
+
+            <!-- Feature 3: Approval -->
+            <div class="feature-card">
+              <div class="feature-icon-wrap">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 11 12 14 22 4"/>
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                </svg>
+              </div>
+              <h3 class="feature-name">Approval & Otomasi Cepat</h3>
+              <p class="feature-desc">PJ Kelas dapat mengajukan ruangan langsung dari denah, dan Dosen pengampu dapat menyetujui (ACC) atau menolak pengajuan secara instan.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="landing-footer">
+      <div class="footer-inner">
+        <div>&copy; 2024 Universitas Negeri Jakarta &mdash; Sistem Informasi Pemetaan & Reservasi Ruang Kelas</div>
+        <div class="footer-links">
+          <a :href="routes.public.pilihGedung">Denah Gedung</a>
+          <a :href="routes.auth.login">Masuk Akun</a>
+          <a :href="routes.auth.signup">Daftar</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.5.43/dist/vue.global.prod.js"></script>
+  <script src="../assets/js/core/config.js"></script>
+  <script src="../assets/js/core/routes.js"></script>
+  <script src="../assets/js/core/utils.js"></script>
+  <script src="../assets/js/core/store.js"></script>
+  <script src="../assets/js/data/buildings.js"></script>
+  <script src="../assets/js/data/rooms.js"></script>
+  <script src="../assets/js/data/bookings.js"></script>
+  <script src="../assets/js/data/users.js"></script>
+  <script src="../assets/js/core/api.js"></script>
+  <script src="../assets/js/core/auth.js"></script>
+  <script src="../assets/js/core/guard.js"></script>
+  <script src="../navigation/nav-loader.js"></script>
+  <script src="../assets/js/pages/public/landing.js"></script>
+</body>
+</html>

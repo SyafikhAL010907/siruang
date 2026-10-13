@@ -1,0 +1,7 @@
+/**
+ * semua-booking.css — Gaya halaman Semua Booking Admin (Halaman 26)
+ */
+
+.booking-admin-row:hover {
+  background-color: var(--color-surface, #F5F9F6);
+}

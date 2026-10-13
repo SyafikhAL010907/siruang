@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Master Data Ruangan | Reservasi Ruangan UNJ</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="../assets/js/core/tailwind-config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/global.css" />
+  <link rel="stylesheet" href="../assets/css/admin/master-data-ruangan.css" />
+</head>
+<body class="bg-surface text-ink antialiased" style="font-family:'Inter',system-ui,sans-serif;">
+  <div id="app" v-cloak class="min-h-screen flex flex-col justify-between">
+    <!-- Navbar Admin -->
+    <app-navbar></app-navbar>
+
+    <!-- Konten Utama -->
+    <main class="flex-1 mx-auto max-w-7xl w-full px-4 py-6 sm:py-8">
+      <!-- Breadcrumb -->
+      <nav class="flex items-center text-xs text-muted mb-4 gap-1.5" aria-label="Breadcrumb">
+        <a :href="routes.admin.dashboard" class="hover:text-primary">Admin</a>
+        <span>/</span>
+        <span class="text-ink font-medium">Master Data Ruangan</span>
+      </nav>
+
+      <!-- Header Halaman & Tambah Ruangan -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-ink">
+            Master Data Ruang Kelas
+          </h1>
+          <p class="text-xs sm:text-sm text-muted mt-1">
+            Kelola inventaris fisik ruang perkuliahan, kapasitas rombel multi-kelas, fasilitas, serta status operasional/maintenance.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          @click="openCreateModal"
+          class="btn btn-primary text-xs py-2.5 px-4 font-semibold shadow-xs flex items-center gap-1.5"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="12"/></svg>
+          <span>Tambah Ruangan Baru</span>
+        </button>
+      </div>
+
+      <!-- Tab Beralih Gedung Utama -->
+      <div class="flex border-b border-border mb-6 gap-3">
+        <button
+          type="button"
+          @click="switchGedung('L')"
+          class="pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition"
+          :class="selectedGedung === 'L' ? 'text-primary border-primary' : 'text-muted border-transparent hover:text-ink'"
+        >
+          <span>Gedung L (Rumpun Elektro)</span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] bg-primary-soft text-primary font-extrabold">
+            {{ statsGedung.totalL }} Ruang
+          </span>
+        </button>
+
+        <button
+          type="button"
+          @click="switchGedung('LS')"
+          class="pb-3 text-sm font-bold flex items-center gap-2 border-b-2 transition"
+          :class="selectedGedung === 'LS' ? 'text-primary border-primary' : 'text-muted border-transparent hover:text-ink'"
+        >
+          <span>Gedung L (Rumpun Sipil)</span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] bg-primary-soft text-primary font-extrabold">
+            {{ statsGedung.totalLS }} Ruang
+          </span>
+        </button>
+      </div>
+
+      <!-- Toolbar Filter Lantai & Pencarian -->
+      <div class="card p-4 bg-white border border-border rounded-xl shadow-xs mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        <!-- Filter Lantai Pills -->
+        <div class="flex items-center gap-1.5 overflow-x-auto">
+          <span class="text-xs text-muted font-medium mr-1 hidden sm:inline">Lantai:</span>
+          <button
+            type="button"
+            @click="selectedLantai = 'semua'"
+            class="px-3 py-1.5 rounded-lg text-xs font-semibold transition"
+            :class="selectedLantai === 'semua' ? 'bg-primary text-white shadow-xs' : 'bg-surface text-muted hover:text-ink'"
+          >
+            Semua
+          </button>
+          <button
+            v-for="l in [1, 2, 3, 4]"
+            :key="l"
+            type="button"
+            @click="selectedLantai = l"
+            class="px-3 py-1.5 rounded-lg text-xs font-semibold transition"
+            :class="selectedLantai === l ? 'bg-primary text-white shadow-xs' : 'bg-surface text-muted hover:text-ink'"
+          >
+            Lantai {{ l }}
+          </button>
+        </div>
+
+        <!-- Pencarian Ruangan -->
+        <div class="relative w-full sm:w-72">
+          <input
+            type="text"
+            v-model="searchQuery"
+            placeholder="Cari kode, nama, atau fasilitas..."
+            class="form-input text-xs pl-9 pr-4 py-2 w-full"
+          />
+          <svg class="absolute left-3 top-2.5 text-muted pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div v-if="loading" class="card p-12 bg-white border border-border rounded-xl text-center">
+        <div class="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-3"></div>
+        <p class="text-xs text-muted">Memuat data ruangan...</p>
+      </div>
+
+      <!-- Empty State -->
+      <div v-else-if="filteredRooms.length === 0" class="card p-12 bg-white border border-border rounded-xl text-center shadow-xs">
+        <div class="w-12 h-12 rounded-full bg-surface text-muted border border-border flex items-center justify-center mx-auto mb-3">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        </div>
+        <h3 class="text-base font-bold text-ink">Tidak Ada Ruangan Ditemukan</h3>
+        <p class="text-xs text-muted max-w-sm mx-auto mt-1">
+          Tidak ada data ruangan yang cocok dengan filter lantai atau kata kunci pencarian.
+        </p>
+      </div>
+
+      <!-- Tabel Master Ruangan (Desktop & Tablet) -->
+      <div v-else class="space-y-4">
+        <div class="hidden sm:block card bg-white border border-border rounded-xl shadow-xs overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-ink">
+              <thead class="bg-primary-soft text-primary font-bold uppercase tracking-wider text-[11px] border-b border-border">
+                <tr>
+                  <th class="py-3.5 px-4 w-12 text-center">No</th>
+                  <th class="py-3.5 px-4">Ruang Kelas</th>
+                  <th class="py-3.5 px-4">Lokasi Gedung</th>
+                  <th class="py-3.5 px-4 text-center">Kapasitas</th>
+                  <th class="py-3.5 px-4">Fasilitas Ruangan</th>
+                  <th class="py-3.5 px-4 text-center">Status</th>
+                  <th class="py-3.5 px-4 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border">
+                <tr
+                  v-for="(r, idx) in paginatedRooms"
+                  :key="r.id"
+                  class="hover:bg-surface transition"
+                >
+                  <td class="py-3.5 px-4 text-center text-muted font-medium">
+                    {{ (currentPage - 1) * perPage + idx + 1 }}
+                  </td>
+                  <td class="py-3.5 px-4">
+                    <div class="font-extrabold text-ink text-sm">{{ r.kode }}</div>
+                    <div class="text-[11px] text-muted">{{ r.nama }}</div>
+                  </td>
+                  <td class="py-3.5 px-4">
+                    <div class="font-medium text-ink">
+                      {{ r.gedung === 'LS' ? 'Gedung L (Sipil)' : 'Gedung L (Elektro)' }}
+                    </div>
+                    <div class="text-[11px] text-muted">Lantai {{ r.lantai }}</div>
+                  </td>
+                  <td class="py-3.5 px-4 text-center">
+                    <span class="inline-flex px-2 py-0.5 rounded-md bg-surface border border-border font-bold text-xs text-ink">
+                      {{ r.kapasitas }} Rombel
+                    </span>
+                  </td>
+                  <td class="py-3.5 px-4">
+                    <div class="flex flex-wrap gap-1 max-w-xs">
+                      <span v-for="f in (r.fasilitas || [])" :key="f" class="facility-chip">
+                        {{ f }}
+                      </span>
+                    </div>
+                  </td>
+                  <td class="py-3.5 px-4 text-center">
+                    <span
+                      class="badge text-[11px] font-semibold"
+                      :class="r.statusAktif !== false ? 'badge-success' : 'badge-danger'"
+                    >
+                      {{ r.statusAktif !== false ? 'Aktif' : 'Maintenance' }}
+                    </span>
+                  </td>
+                  <td class="py-3.5 px-4 text-right">
+                    <div class="inline-flex items-center gap-1.5 justify-end">
+                      <button
+                        type="button"
+                        @click="openEditModal(r)"
+                        class="btn btn-secondary text-xs py-1.5 px-2.5 font-medium"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        @click="toggleMaintenance(r)"
+                        class="btn text-xs py-1.5 px-2.5 font-medium"
+                        :class="r.statusAktif !== false ? 'btn-secondary text-yellow-700' : 'btn-primary'"
+                        :title="r.statusAktif !== false ? 'Set ke Mode Maintenance' : 'Set ke Mode Aktif'"
+                      >
+                        {{ r.statusAktif !== false ? 'Maintenance' : 'Aktifkan' }}
+                      </button>
+                      <button
+                        type="button"
+                        @click="deleteRoom(r)"
+                        class="btn btn-danger text-xs py-1.5 px-2"
+                        title="Hapus Ruangan"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tampilan Mobile (Kartu) -->
+        <div class="sm:hidden space-y-3">
+          <div
+            v-for="r in paginatedRooms"
+            :key="r.id"
+            class="card p-4 bg-white border border-border rounded-xl shadow-xs"
+          >
+            <div class="flex items-start justify-between mb-2">
+              <span class="badge text-[10px] font-bold" :class="r.statusAktif !== false ? 'badge-success' : 'badge-danger'">
+                {{ r.statusAktif !== false ? 'Aktif' : 'Maintenance' }}
+              </span>
+              <span class="text-xs font-bold text-primary">{{ r.kapasitas }} Rombel</span>
+            </div>
+            <h3 class="text-base font-extrabold text-ink">{{ r.kode }} &mdash; {{ r.nama }}</h3>
+            <div class="text-xs text-muted mb-2">
+              {{ r.gedung === 'LS' ? 'Gedung L (Sipil)' : 'Gedung L (Elektro)' }} &bull; Lantai {{ r.lantai }}
+            </div>
+            <div class="flex flex-wrap gap-1 mb-3">
+              <span v-for="f in (r.fasilitas || [])" :key="f" class="facility-chip text-[10px]">
+                {{ f }}
+              </span>
+            </div>
+            <div class="flex items-center justify-end gap-1.5 pt-2 border-t border-border">
+              <button @click="openEditModal(r)" class="btn btn-secondary text-xs py-1.5 px-2.5">Edit</button>
+              <button @click="toggleMaintenance(r)" class="btn text-xs py-1.5 px-2.5" :class="r.statusAktif !== false ? 'btn-secondary text-yellow-700' : 'btn-primary'">
+                {{ r.statusAktif !== false ? 'Maintenance' : 'Aktifkan' }}
+              </button>
+              <button @click="deleteRoom(r)" class="btn btn-danger text-xs py-1.5 px-2">Hapus</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Paginasi -->
+        <div v-if="totalPages > 1" class="pagination-container">
+          <div class="text-xs text-muted">
+            Menampilkan halaman <strong>{{ currentPage }}</strong> dari <strong>{{ totalPages }}</strong> (Total {{ filteredRooms.length }} ruangan)
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button
+              type="button"
+              @click="prevPage"
+              :disabled="currentPage === 1"
+              class="btn btn-secondary text-xs py-1.5 px-3"
+            >
+              &larr; Sebelumnya
+            </button>
+            <button
+              type="button"
+              @click="nextPage"
+              :disabled="currentPage === totalPages"
+              class="btn btn-secondary text-xs py-1.5 px-3"
+            >
+              Selanjutnya &rarr;
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-xs text-muted border-t border-border bg-white mt-12">
+      &copy; 2024 Universitas Negeri Jakarta &mdash; Sistem Informasi Pemetaan & Reservasi Ruang Kelas
+    </footer>
+
+    <!-- Modal Form Tambah/Edit Ruangan 🆕 -->
+    <div
+      v-if="modalOpen"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 backdrop-blur-xs"
+      @click.self="closeModal"
+    >
+      <div class="card p-6 bg-white border border-border rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+        <div class="flex items-start justify-between mb-4">
+          <h3 class="text-base font-bold text-ink">
+            {{ isEditing ? 'Edit Ruang Kelas' : 'Tambah Ruang Kelas Baru' }}
+          </h3>
+          <button @click="closeModal" class="text-muted hover:text-ink text-lg">&times;</button>
+        </div>
+
+        <div class="space-y-3.5 text-xs">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="form-group">
+              <label for="room-gedung" class="form-label">Gedung <span class="required">*</span></label>
+              <select id="room-gedung" v-model="formData.gedung" class="form-select text-xs">
+                <option value="L">Gedung L (Rumpun Elektro)</option>
+                <option value="LS">Gedung L (Rumpun Sipil)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="room-lantai" class="form-label">Lantai <span class="required">*</span></label>
+              <select id="room-lantai" v-model.number="formData.lantai" class="form-select text-xs">
+                <option :value="1">Lantai 1</option>
+                <option :value="2">Lantai 2</option>
+                <option :value="3">Lantai 3</option>
+                <option :value="4">Lantai 4</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="form-group">
+              <label for="room-kode" class="form-label">Kode Ruangan <span class="required">*</span></label>
+              <input
+                id="room-kode"
+                type="text"
+                v-model="formData.kode"
+                class="form-input text-xs"
+                :class="{ 'is-error': formErrors.kode }"
+                placeholder="Contoh: L.101"
+              />
+              <p v-if="formErrors.kode" class="form-error text-[11px] mt-1">{{ formErrors.kode }}</p>
+            </div>
+
+            <div class="form-group">
+              <label for="room-nama" class="form-label">Nama Ruangan <span class="required">*</span></label>
+              <input
+                id="room-nama"
+                type="text"
+                v-model="formData.nama"
+                class="form-input text-xs"
+                :class="{ 'is-error': formErrors.nama }"
+                placeholder="Contoh: Ruang 101 Teori"
+              />
+              <p v-if="formErrors.nama" class="form-error text-[11px] mt-1">{{ formErrors.nama }}</p>
+            </div>
+          </div>
+
+          <!-- Kapasitas Multi-Rombel -->
+          <div class="form-group">
+            <label class="form-label">Kapasitas Maksimal Ruangan (Rombel):</label>
+            <div class="grid grid-cols-3 gap-2">
+              <label
+                v-for="k in [1, 2, 3]"
+                :key="k"
+                class="p-2.5 rounded-xl border text-center cursor-pointer transition flex flex-col items-center"
+                :class="formData.kapasitas === k ? 'border-primary bg-primary-soft text-primary font-bold' : 'border-border bg-white text-ink'"
+              >
+                <input type="radio" :value="k" v-model.number="formData.kapasitas" class="sr-only" />
+                <span class="text-sm font-bold">{{ k }} Rombel</span>
+                <span class="text-[10px] text-muted font-normal">~{{ k * 35 }} Kursi</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Checklist Fasilitas -->
+          <div class="form-group">
+            <label class="form-label">Fasilitas Tersedia:</label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
+              <label
+                v-for="f in facilityList"
+                :key="f"
+                class="flex items-center gap-2 p-2 rounded-lg border border-border cursor-pointer hover:bg-surface transition"
+              >
+                <input
+                  type="checkbox"
+                  :checked="formData.fasilitas.indexOf(f) !== -1"
+                  @change="toggleFacilityCheckbox(f)"
+                  class="rounded text-primary focus:ring-primary"
+                />
+                <span class="text-xs text-ink">{{ f }}</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Status Aktif / Maintenance -->
+          <div class="form-group pt-2 border-t border-border">
+            <label class="form-label">Status Operasional Ruangan:</label>
+            <div class="flex items-center gap-4">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" :value="true" v-model="formData.statusAktif" class="text-primary" />
+                <span class="text-xs font-semibold text-emerald-800">Aktif Digunakan</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" :value="false" v-model="formData.statusAktif" class="text-red-600" />
+                <span class="text-xs font-semibold text-red-800">Maintenance / Nonaktif</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-4 mt-4 border-t border-border">
+          <button
+            type="button"
+            @click="closeModal"
+            class="btn btn-secondary text-xs py-2 px-3"
+            :disabled="actionLoading"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            @click="submitForm"
+            class="btn btn-primary text-xs py-2 px-4 font-semibold"
+            :disabled="actionLoading"
+          >
+            <span v-if="actionLoading">Menyimpan...</span>
+            <span v-else>{{ isEditing ? 'Simpan Perubahan' : 'Tambahkan Ruangan' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.5.43/dist/vue.global.prod.js"></script>
+  <script src="../assets/js/core/config.js"></script>
+  <script src="../assets/js/core/routes.js"></script>
+  <script src="../assets/js/core/utils.js"></script>
+  <script src="../assets/js/core/store.js"></script>
+  <script src="../assets/js/data/buildings.js"></script>
+  <script src="../assets/js/data/rooms.js"></script>
+  <script src="../assets/js/data/users.js"></script>
+  <script src="../assets/js/data/courses.js"></script>
+  <script src="../assets/js/data/relations.js"></script>
+  <script src="../assets/js/data/bookings.js"></script>
+  <script src="../assets/js/data/notifications.js"></script>
+  <script src="../assets/js/data/logs.js"></script>
+  <script src="../assets/js/core/api.js"></script>
+  <script src="../assets/js/core/auth.js"></script>
+  <script src="../navigation/navbar-admin.js"></script>
+  <script src="../assets/js/pages/admin/master-data-ruangan.js"></script>
+</body>
+</html>

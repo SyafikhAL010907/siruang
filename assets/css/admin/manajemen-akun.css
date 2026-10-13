@@ -1,0 +1,14 @@
+/**
+ * manajemen-akun.css — Gaya halaman Manajemen Akun Pengguna (Halaman 23)
+ */
+
+.user-avatar-badge {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.875rem;
+}

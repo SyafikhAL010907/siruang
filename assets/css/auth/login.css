@@ -1,0 +1,12 @@
+/* ============================================
+   login.css — Gaya Khusus Halaman Login
+   ============================================ */
+
+[v-cloak] {
+  display: none !important;
+}
+
+.login-card {
+  max-width: 440px;
+  width: 100%;
+}

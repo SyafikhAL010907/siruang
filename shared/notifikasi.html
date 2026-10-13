@@ -1,0 +1,178 @@
+<!-- 🆕 TAMBAHAN -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pemberitahuan & Notifikasi | Reservasi Ruangan UNJ</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="../assets/js/core/tailwind-config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/global.css" />
+  <link rel="stylesheet" href="../assets/css/shared/notifikasi.css" />
+</head>
+<body class="bg-surface text-ink antialiased" style="font-family:'Inter',system-ui,sans-serif;">
+  <div id="app" v-cloak class="min-h-screen flex flex-col justify-between">
+    <!-- Navbar Otomatis Sesuai Role -->
+    <app-navbar></app-navbar>
+
+    <!-- Konten Notifikasi -->
+    <main class="flex-1 mx-auto max-w-4xl w-full px-4 py-8 sm:py-10">
+      <!-- Breadcrumb -->
+      <nav class="flex items-center text-xs text-muted mb-4 gap-1.5" aria-label="Breadcrumb">
+        <a :href="routes.public.landing" class="hover:text-primary">Beranda</a>
+        <span>/</span>
+        <span class="text-ink font-medium">Notifikasi</span>
+      </nav>
+
+      <!-- Header & Aksi Tandai Semua Dibaca -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-2xl sm:text-3xl font-bold text-ink">Notifikasi & Pemberitahuan</h1>
+            <span v-if="unreadCount > 0" class="badge badge-warning font-bold">
+              {{ unreadCount }} Belum Dibaca
+            </span>
+          </div>
+          <p class="text-xs sm:text-sm text-muted mt-1">
+            Informasi status pengajuan ruangan, konfirmasi persetujuan, dan pembaruan sistem.
+          </p>
+        </div>
+
+        <button
+          v-if="unreadCount > 0"
+          type="button"
+          @click="markAllAsRead"
+          class="btn btn-secondary text-xs flex items-center gap-1.5 font-semibold"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Tandai Semua Dibaca</span>
+        </button>
+      </div>
+
+      <!-- Filter Tab Notifikasi -->
+      <div class="flex border-b border-border mb-6 gap-2 text-xs overflow-x-auto pb-1">
+        <button
+          type="button"
+          @click="filterTab = 'semua'"
+          class="pb-3 px-3 font-semibold border-b-2 transition flex items-center gap-1.5 whitespace-nowrap flex-shrink-0"
+          :class="filterTab === 'semua' ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-ink'"
+        >
+          Semua ({{ notifList.length }})
+        </button>
+        <button
+          type="button"
+          @click="filterTab = 'unread'"
+          class="pb-3 px-3 font-semibold border-b-2 transition flex items-center gap-1.5 whitespace-nowrap flex-shrink-0"
+          :class="filterTab === 'unread' ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-ink'"
+        >
+          Belum Dibaca ({{ unreadCount }})
+        </button>
+        <button
+          type="button"
+          @click="filterTab = 'read'"
+          class="pb-3 px-3 font-semibold border-b-2 transition flex items-center gap-1.5 whitespace-nowrap flex-shrink-0"
+          :class="filterTab === 'read' ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-ink'"
+        >
+          Sudah Dibaca ({{ notifList.length - unreadCount }})
+        </button>
+      </div>
+
+      <!-- Daftar Notifikasi -->
+      <div class="space-y-3">
+        <!-- Empty State -->
+        <div v-if="filteredNotifs.length === 0" class="card p-12 bg-white border border-border rounded-xl text-center shadow-xs">
+          <svg class="w-12 h-12 mx-auto text-muted/40 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+          <p class="font-semibold text-ink text-sm">Tidak Ada Notifikasi</p>
+          <p class="text-xs text-muted mt-1">Anda tidak memiliki pemberitahuan pada kategori ini.</p>
+        </div>
+
+        <!-- Kartu Notifikasi -->
+        <div
+          v-for="item in filteredNotifs"
+          :key="item.id"
+          class="card p-4 sm:p-5 bg-white border rounded-xl shadow-xs transition flex flex-col sm:flex-row items-start justify-between gap-4"
+          :class="[
+            item.read ? 'border-border' : 'border-emerald-200 bg-emerald-50/20 shadow-sm',
+          ]"
+        >
+          <div class="flex items-start gap-3.5">
+            <!-- Icon Sesuai Tipe -->
+            <div
+              class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
+              :class="getIconBgClass(item.type)"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <!-- ACC -->
+                <path v-if="item.type === 'acc'" d="M22 11.08V12a10 10 0 1 1-5.93-9.14 M22 4L12 14.01l-3-3"/>
+                <!-- Tolak / Batal -->
+                <path v-else-if="item.type === 'tolak' || item.type === 'batal'" d="M18 6L6 18 M6 6l12 12"/>
+                <!-- Fallback -->
+                <path v-else-if="item.type === 'fallback'" d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01"/>
+                <!-- Default / Booking Baru -->
+                <path v-else d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9 M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+            </div>
+
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-bold text-sm text-ink">{{ item.title }}</span>
+                <span v-if="!item.read" class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span class="text-[11px] text-muted">&bull; {{ formatDateTime(item.createdAt) }}</span>
+              </div>
+              <p class="text-xs text-muted mt-1 leading-relaxed">{{ item.message }}</p>
+
+              <!-- Link Terkait jika ada -->
+              <div v-if="item.link" class="mt-2.5">
+                <a
+                  :href="item.link"
+                  @click="markAsRead(item.id)"
+                  class="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1"
+                >
+                  <span>Buka Halaman Terkait</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Aksi Tandai Dibaca per item -->
+          <div class="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
+            <button
+              v-if="!item.read"
+              type="button"
+              @click="markAsRead(item.id)"
+              class="text-xs text-muted hover:text-primary font-medium p-1.5 rounded-lg hover:bg-surface transition"
+              title="Tandai sudah dibaca"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-xs text-muted border-t border-border bg-white mt-12">
+      &copy; 2024 Universitas Negeri Jakarta &mdash; Sistem Informasi Pemetaan & Reservasi Ruang Kelas
+    </footer>
+  </div>
+
+  <!-- Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.5.43/dist/vue.global.prod.js"></script>
+  <script src="../assets/js/core/config.js"></script>
+  <script src="../assets/js/core/routes.js"></script>
+  <script src="../assets/js/core/utils.js"></script>
+  <script src="../assets/js/core/store.js"></script>
+  <script src="../assets/js/data/notifications.js"></script>
+  <script src="../assets/js/data/users.js"></script>
+  <script src="../assets/js/core/api.js"></script>
+  <script src="../assets/js/core/auth.js"></script>
+  <script src="../assets/js/core/guard.js"></script>
+  <script src="../assets/js/components/toast.js"></script>
+  <script src="../navigation/nav-loader.js"></script>
+  <script src="../assets/js/pages/shared/notifikasi.js"></script>
+</body>
+</html>

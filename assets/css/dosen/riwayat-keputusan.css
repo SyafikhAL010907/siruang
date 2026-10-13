@@ -1,0 +1,7 @@
+/**
+ * riwayat-keputusan.css — Gaya halaman Riwayat Keputusan Dosen (Halaman 21)
+ */
+
+.decision-row:hover {
+  background-color: var(--color-surface, #F5F9F6);
+}

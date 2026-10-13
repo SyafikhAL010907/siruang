@@ -1,0 +1,22 @@
+/**
+ * detail-pengajuan.css — Gaya halaman Detail Pengajuan Ruangan Dosen (Halaman 20)
+ */
+
+.timeline-step {
+  position: relative;
+  padding-left: 2rem;
+}
+
+.timeline-step::before {
+  content: '';
+  position: absolute;
+  left: 0.45rem;
+  top: 1.5rem;
+  bottom: -0.5rem;
+  width: 2px;
+  background-color: var(--color-border, #D5E2D9);
+}
+
+.timeline-step:last-child::before {
+  display: none;
+}

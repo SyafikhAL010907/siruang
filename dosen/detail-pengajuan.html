@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Detail Pengajuan Ruangan | Reservasi Ruangan UNJ</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="../assets/js/core/tailwind-config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/global.css" />
+  <link rel="stylesheet" href="../assets/css/dosen/detail-pengajuan.css" />
+</head>
+<body class="bg-surface text-ink antialiased" style="font-family:'Inter',system-ui,sans-serif;">
+  <div id="app" v-cloak class="min-h-screen flex flex-col justify-between">
+    <!-- Navbar Dosen -->
+    <app-navbar></app-navbar>
+
+    <!-- Konten Utama -->
+    <main class="flex-1 mx-auto max-w-6xl w-full px-4 py-6 sm:py-8">
+      <!-- Breadcrumb -->
+      <nav class="flex items-center text-xs text-muted mb-4 gap-1.5" aria-label="Breadcrumb">
+        <a :href="routes.public.landing" class="hover:text-primary">Beranda</a>
+        <span>/</span>
+        <a :href="routes.dosen.dashboardPersetujuan" class="hover:text-primary">Dashboard Persetujuan</a>
+        <span>/</span>
+        <a :href="routes.dosen.daftarAccRuangan" class="hover:text-primary">Daftar ACC</a>
+        <span>/</span>
+        <span class="text-ink font-medium">Detail Pengajuan</span>
+      </nav>
+
+      <!-- Loading State -->
+      <div v-if="loading" class="card p-12 bg-white border border-border rounded-2xl text-center">
+        <div class="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-3"></div>
+        <p class="text-xs text-muted">Memuat detail permohonan reservasi...</p>
+      </div>
+
+      <!-- Not Found State -->
+      <div v-else-if="notFound || !booking" class="card p-12 bg-white border border-border rounded-2xl text-center shadow-xs">
+        <div class="w-12 h-12 rounded-full bg-red-50 text-red-700 flex items-center justify-center mx-auto mb-3">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <h2 class="text-lg font-bold text-ink">Pengajuan Tidak Ditemukan</h2>
+        <p class="text-xs text-muted max-w-sm mx-auto mt-1 mb-6">
+          Data reservasi yang Anda minta tidak tersedia atau parameter ID salah.
+        </p>
+        <a :href="routes.dosen.daftarAccRuangan" class="btn btn-secondary text-xs py-2 px-4">
+          &larr; Kembali ke Daftar ACC
+        </a>
+      </div>
+
+      <!-- Detail Konten -->
+      <div v-else class="space-y-6">
+        <!-- Header Rincian Pengajuan -->
+        <div class="card p-5 sm:p-6 bg-white border border-border rounded-2xl shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2 flex-wrap mb-1">
+              <span
+                class="badge text-xs font-bold"
+                :class="{
+                  'badge-warning': booking.status === 'menunggu',
+                  'badge-success': booking.status === 'disetujui',
+                  'badge-danger': booking.status === 'ditolak',
+                  'badge-info': booking.status === 'selesai' || booking.status === 'dibatalkan'
+                }"
+              >
+                {{ booking.status === 'menunggu' ? 'Menunggu Persetujuan' : (booking.status === 'disetujui' ? 'Telah Disetujui' : (booking.status === 'ditolak' ? 'Ditolak' : booking.status)) }}
+              </span>
+              <span class="text-xs text-muted font-medium">ID: {{ booking.id }}</span>
+            </div>
+            <h1 class="text-xl sm:text-2xl font-extrabold text-ink">
+              {{ course ? course.nama : 'Mata Kuliah' }}
+            </h1>
+            <p class="text-xs text-muted mt-0.5">
+              Diajukan pada {{ formatDateTime(booking.createdAt) }}
+            </p>
+          </div>
+
+          <!-- Tombol Kembali -->
+          <div class="flex items-center gap-2">
+            <a :href="routes.dosen.daftarAccRuangan" class="btn btn-secondary text-xs py-2 px-3 flex items-center gap-1.5">
+              <span>&larr;</span>
+              <span>Daftar ACC</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Banner Peringatan Fallback Ruangan 🆕 -->
+        <div v-if="booking.isFallback" class="card p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start gap-3">
+          <div class="text-lg flex-shrink-0">⚠️</div>
+          <div>
+            <div class="font-bold">Indikasi Fallback Kapasitas Ruangan</div>
+            <p class="mt-0.5 text-amber-800 leading-relaxed">
+              Pengajuan ini meminta kapasitas <strong>{{ booking.jumlahKelas }} Rombel</strong> di dalam ruangan berkapasitas <strong>{{ room ? room.kapasitas : 3 }} Rombel</strong>. Ruangan berukuran besar digunakan karena keterbatasan ruang standar yang tersedia pada jam tersebut.
+            </p>
+          </div>
+        </div>
+
+        <!-- Grid 2 Kolom: Detail Utama vs Sidebar Keputusan -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Kolom Utama (2 Kolom) -->
+          <div class="lg:col-span-2 space-y-6">
+            <!-- 1. Jadwal & Waktu Perkuliahan -->
+            <div class="card p-5 sm:p-6 bg-white border border-border rounded-2xl shadow-xs">
+              <h2 class="text-xs font-bold uppercase tracking-wider text-primary mb-4 flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Jadwal & Waktu Pemakaian
+              </h2>
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
+                <div class="p-3 bg-surface rounded-xl border border-border">
+                  <div class="text-muted">Tanggal Pelaksanaan</div>
+                  <div class="text-sm font-bold text-ink mt-0.5">{{ formatDate(booking.tanggal) }}</div>
+                </div>
+                <div class="p-3 bg-surface rounded-xl border border-border">
+                  <div class="text-muted">Waktu (Jam Kuliah)</div>
+                  <div class="text-sm font-bold text-ink mt-0.5">{{ booking.jamMulai }} - {{ booking.jamSelesai }} WIB</div>
+                </div>
+                <div class="p-3 bg-surface rounded-xl border border-border">
+                  <div class="text-muted">Estimasi Durasi</div>
+                  <div class="text-sm font-bold text-ink mt-0.5">{{ formatDuration(booking.jamMulai, booking.jamSelesai) }}</div>
+                </div>
+                <div class="p-3 bg-surface rounded-xl border border-border">
+                  <div class="text-muted">Rombel Diajukan</div>
+                  <div class="text-sm font-bold text-ink mt-0.5">{{ booking.jumlahKelas }} Kelas (~{{ booking.jumlahKelas * 35 }} Mhs)</div>
+                </div>
+                <div class="p-3 bg-surface rounded-xl border border-border">
+                  <div class="text-muted">Kode Mata Kuliah</div>
+                  <div class="text-sm font-bold text-ink mt-0.5">{{ course ? course.kode : '-' }} ({{ course ? course.sks : 3 }} SKS)</div>
+                </div>
+                <div class="p-3 bg-surface rounded-xl border border-border">
+                  <div class="text-muted">Program Studi</div>
+                  <div class="text-sm font-bold text-ink mt-0.5">{{ course ? course.prodi : '-' }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. Ruangan & Fasilitas -->
+            <div class="card p-5 sm:p-6 bg-white border border-border rounded-2xl shadow-xs">
+              <h2 class="text-xs font-bold uppercase tracking-wider text-primary mb-4 flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+                Spesifikasi Ruangan
+              </h2>
+              <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-surface rounded-xl border border-border mb-4">
+                <div>
+                  <div class="text-xs font-bold text-primary uppercase">
+                    Gedung {{ room ? (room.gedung === 'LS' ? 'L (Rumpun Sipil)' : 'L (Rumpun Elektro)') : '-' }} &bull; Lantai {{ room ? room.lantai : '-' }}
+                  </div>
+                  <div class="text-xl font-extrabold text-ink mt-0.5">
+                    Ruang {{ room ? room.kode : '-' }} &mdash; {{ room ? room.nama : '-' }}
+                  </div>
+                  <div class="text-xs text-muted mt-0.5">
+                    Kapasitas Maksimal Ruangan: <strong>{{ room ? room.kapasitas : 1 }} Rombel</strong>
+                  </div>
+                </div>
+                <a :href="routes.public.denah + '?gedung=' + (room ? room.gedung : 'L') + '&lantai=' + (room ? room.lantai : 1)" target="_blank" class="btn btn-secondary text-xs py-2 px-3 flex-shrink-0">
+                  Tinjau di Denah 2D &rarr;
+                </a>
+              </div>
+
+              <!-- Fasilitas Ruangan -->
+              <div>
+                <div class="text-xs font-semibold text-muted mb-2">Fasilitas Tersedia di Ruangan:</div>
+                <div class="flex flex-wrap gap-2">
+                  <span
+                    v-for="f in (room && room.fasilitas ? room.fasilitas : [])"
+                    :key="f"
+                    class="badge badge-info text-xs py-1 px-2.5 flex items-center gap-1.5"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                    {{ f }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. Alasan dan Catatan Pemohon -->
+            <div class="card p-5 sm:p-6 bg-white border border-border rounded-2xl shadow-xs">
+              <h2 class="text-xs font-bold uppercase tracking-wider text-primary mb-3 flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                Alasan / Keperluan Reservasi
+              </h2>
+              <div class="p-4 bg-surface rounded-xl border border-border text-sm text-ink leading-relaxed italic">
+                "{{ booking.alasan || 'Tidak ada keterangan tambahan.' }}"
+              </div>
+            </div>
+
+            <!-- 4. Rincian Penolakan (Jika Berstatus Ditolak) -->
+            <div v-if="booking.status === 'ditolak'" class="card p-5 sm:p-6 bg-red-50 border border-red-200 rounded-2xl shadow-xs">
+              <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-red-800 mb-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                Alasan Penolakan dari Dosen
+              </div>
+              <p class="text-sm text-red-950 font-medium">
+                {{ booking.alasanPenolakan || 'Tidak ada alasan rinci yang dicatat.' }}
+              </p>
+              <div class="text-[11px] text-red-800 mt-2">
+                Diproses oleh: <strong>{{ processor ? processor.nama : 'Dosen Pengampu' }}</strong> pada {{ formatDateTime(booking.processedAt) }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Kolom Sidebar (1 Kolom): Aksi Dosen & Data Pemohon -->
+          <div class="space-y-6">
+            <!-- Panel Keputusan ACC / Tolak -->
+            <div class="card p-5 sm:p-6 bg-white border border-border rounded-2xl shadow-xs">
+              <h2 class="text-xs font-bold uppercase tracking-wider text-primary mb-3">
+                Panel Keputusan Dosen
+              </h2>
+
+              <template v-if="booking.status === 'menunggu'">
+                <p class="text-xs text-muted mb-4 leading-relaxed">
+                  Silakan berikan keputusan terhadap permohonan ini. Menyetujui akan mengunci slot ruangan untuk perkuliahan.
+                </p>
+                <div class="space-y-2.5">
+                  <button
+                    type="button"
+                    @click="handleApprove"
+                    class="btn btn-primary w-full py-2.5 text-sm font-bold flex items-center justify-center gap-2 shadow-xs"
+                    :disabled="actionLoading"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>Setujui (ACC) Pengajuan</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    @click="openRejectModal"
+                    class="btn btn-danger w-full py-2.5 text-sm font-semibold flex items-center justify-center gap-2"
+                    :disabled="actionLoading"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <span>Tolak Pengajuan</span>
+                  </button>
+                </div>
+              </template>
+
+              <template v-else>
+                <div class="p-4 rounded-xl text-center" :class="booking.status === 'disetujui' ? 'bg-emerald-50 text-emerald-900 border border-emerald-200' : 'bg-red-50 text-red-900 border border-red-200'">
+                  <div class="text-2xl mb-1">
+                    {{ booking.status === 'disetujui' ? '✅' : '❌' }}
+                  </div>
+                  <div class="text-sm font-bold capitalize">
+                    Pengajuan {{ booking.status }}
+                  </div>
+                  <div class="text-[11px] mt-1 text-muted">
+                    Keputusan telah ditetapkan oleh {{ processor ? processor.nama : 'Dosen' }} pada {{ formatDateTime(booking.processedAt) }}.
+                  </div>
+                </div>
+              </template>
+            </div>
+
+            <!-- Profil Pemohon (PJ) -->
+            <div class="card p-5 sm:p-6 bg-white border border-border rounded-2xl shadow-xs">
+              <h2 class="text-xs font-bold uppercase tracking-wider text-primary mb-3">
+                Identitas Pemohon
+              </h2>
+              <div class="flex items-center gap-3 pb-3 border-b border-border mb-3">
+                <div class="w-10 h-10 rounded-full bg-primary-soft text-primary font-bold flex items-center justify-center text-sm">
+                  {{ requester ? requester.nama.charAt(0) : 'P' }}
+                </div>
+                <div>
+                  <div class="text-sm font-bold text-ink">{{ requester ? requester.nama : 'PJ Kelas' }}</div>
+                  <div class="text-[11px] text-muted">Role: Penanggung Jawab Kelas</div>
+                </div>
+              </div>
+              <div class="space-y-2 text-xs">
+                <div class="flex justify-between">
+                  <span class="text-muted">NIM:</span>
+                  <span class="font-semibold text-ink">{{ requester ? requester.nim_nip : '-' }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-muted">Email:</span>
+                  <span class="font-semibold text-ink">{{ requester ? requester.email : '-' }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-muted">Program Studi:</span>
+                  <span class="font-semibold text-ink">{{ requester ? requester.prodi : '-' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Timeline Status Riwayat -->
+            <div class="card p-5 sm:p-6 bg-white border border-border rounded-2xl shadow-xs">
+              <h2 class="text-xs font-bold uppercase tracking-wider text-primary mb-4">
+                Timeline Riwayat
+              </h2>
+              <div class="space-y-4">
+                <!-- Tahap 1: Pengajuan -->
+                <div class="timeline-step">
+                  <div class="absolute left-0 top-0.5 w-4 h-4 rounded-full bg-primary flex items-center justify-center text-white text-[9px] font-bold">
+                    ✓
+                  </div>
+                  <div class="text-xs font-bold text-ink">Permohonan Diajukan</div>
+                  <div class="text-[11px] text-muted">{{ formatDateTime(booking.createdAt) }}</div>
+                  <div class="text-[11px] text-muted mt-0.5">Oleh {{ requester ? requester.nama : 'PJ' }}</div>
+                </div>
+
+                <!-- Tahap 2: Verifikasi Dosen -->
+                <div class="timeline-step">
+                  <div
+                    class="absolute left-0 top-0.5 w-4 h-4 rounded-full flex items-center justify-center text-white text-[9px] font-bold"
+                    :class="booking.status === 'menunggu' ? 'bg-yellow-500 animate-pulse' : (booking.status === 'disetujui' ? 'bg-primary' : 'bg-red-600')"
+                  >
+                    {{ booking.status === 'menunggu' ? '•' : '✓' }}
+                  </div>
+                  <div class="text-xs font-bold text-ink">
+                    {{ booking.status === 'menunggu' ? 'Menunggu Review Dosen' : (booking.status === 'disetujui' ? 'Persetujuan (ACC) Diberikan' : 'Pengajuan Ditolak') }}
+                  </div>
+                  <div v-if="booking.processedAt" class="text-[11px] text-muted">{{ formatDateTime(booking.processedAt) }}</div>
+                  <div v-else class="text-[11px] text-yellow-700 font-medium">Dalam antrean dosen</div>
+                </div>
+
+                <!-- Tahap 3: Jadwal Aktif / Selesai -->
+                <div class="timeline-step">
+                  <div
+                    class="absolute left-0 top-0.5 w-4 h-4 rounded-full flex items-center justify-center text-white text-[9px] font-bold"
+                    :class="booking.status === 'disetujui' ? 'bg-emerald-600' : 'bg-gray-300 text-gray-600'"
+                  >
+                    •
+                  </div>
+                  <div class="text-xs font-bold" :class="booking.status === 'disetujui' ? 'text-ink' : 'text-muted'">
+                    Pelaksanaan Perkuliahan
+                  </div>
+                  <div class="text-[11px] text-muted">{{ formatDate(booking.tanggal) }} ({{ booking.jamMulai }} WIB)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-xs text-muted border-t border-border bg-white mt-12">
+      &copy; 2024 Universitas Negeri Jakarta &mdash; Sistem Informasi Pemetaan & Reservasi Ruang Kelas
+    </footer>
+
+    <!-- Modal Konfirmasi Penolakan Pengajuan 🆕 -->
+    <div
+      v-if="rejectModalOpen"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 backdrop-blur-xs"
+      @click.self="closeRejectModal"
+    >
+      <div class="card p-6 bg-white border border-border rounded-2xl shadow-xl max-w-md w-full">
+        <div class="flex items-start justify-between mb-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-red-100 text-red-700 flex items-center justify-center font-bold">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-ink">Tolak Pengajuan Ruangan</h3>
+              <p class="text-xs text-muted">Berikan alasan yang jelas kepada pemohon</p>
+            </div>
+          </div>
+          <button @click="closeRejectModal" class="text-muted hover:text-ink text-lg">&times;</button>
+        </div>
+
+        <div class="form-group mb-4">
+          <label for="alasan-tolak-input" class="form-label text-xs">
+            Alasan Penolakan <span class="required">* (Minimal 10 karakter)</span>
+          </label>
+          <textarea
+            id="alasan-tolak-input"
+            v-model="alasanTolak"
+            rows="4"
+            class="form-textarea text-xs"
+            :class="{ 'is-error': rejectError }"
+            placeholder="Tuliskan alasan penolakan secara jelas (mis. Jadwal bertabrakan dengan kegiatan fakultas)..."
+          ></textarea>
+          <p v-if="rejectError" class="form-error text-[11px] mt-1">{{ rejectError }}</p>
+          <p class="text-[11px] text-muted mt-1">Alasan penolakan ini akan dikirimkan otomatis ke notifikasi penanggung jawab kelas.</p>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-border">
+          <button
+            type="button"
+            @click="closeRejectModal"
+            class="btn btn-secondary text-xs py-2 px-3"
+            :disabled="actionLoading"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            @click="confirmReject"
+            class="btn btn-danger text-xs py-2 px-4 font-semibold"
+            :disabled="actionLoading"
+          >
+            <span v-if="actionLoading">Memproses...</span>
+            <span v-else>Konfirmasi Tolak</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.5.43/dist/vue.global.prod.js"></script>
+  <script src="../assets/js/core/config.js"></script>
+  <script src="../assets/js/core/routes.js"></script>
+  <script src="../assets/js/core/utils.js"></script>
+  <script src="../assets/js/core/store.js"></script>
+  <script src="../assets/js/data/buildings.js"></script>
+  <script src="../assets/js/data/rooms.js"></script>
+  <script src="../assets/js/data/users.js"></script>
+  <script src="../assets/js/data/courses.js"></script>
+  <script src="../assets/js/data/relations.js"></script>
+  <script src="../assets/js/data/bookings.js"></script>
+  <script src="../assets/js/data/notifications.js"></script>
+  <script src="../assets/js/data/logs.js"></script>
+  <script src="../assets/js/core/api.js"></script>
+  <script src="../assets/js/core/auth.js"></script>
+  <script src="../assets/js/core/guard.js"></script>
+  <script src="../navigation/navbar-dosen.js"></script>
+  <script src="../assets/js/pages/dosen/detail-pengajuan.js"></script>
+</body>
+</html>

@@ -1,0 +1,273 @@
+<!-- 🆕 TAMBAHAN -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard Booking PJ | Reservasi Ruangan UNJ</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="../assets/js/core/tailwind-config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/global.css" />
+  <link rel="stylesheet" href="../assets/css/pj/dashboard-booking.css" />
+</head>
+<body class="bg-surface text-ink antialiased" style="font-family:'Inter',system-ui,sans-serif;">
+  <div id="app" v-cloak class="min-h-screen flex flex-col justify-between">
+    <!-- Navbar PJ / Admin -->
+    <app-navbar></app-navbar>
+
+    <!-- Konten Utama Dashboard Booking -->
+    <main class="flex-1 mx-auto max-w-7xl w-full px-4 py-6 sm:py-8">
+      <!-- Breadcrumb -->
+      <nav class="flex items-center text-xs text-muted mb-4 gap-1.5" aria-label="Breadcrumb">
+        <a :href="routes.public.landing" class="hover:text-primary">Beranda</a>
+        <span>/</span>
+        <span class="text-ink font-medium">Dashboard Booking PJ</span>
+      </nav>
+
+      <!-- 1. Header Sambutan & Tombol Buat Reservasi -->
+      <div class="card p-6 bg-white border border-border rounded-2xl shadow-xs mb-8">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="badge badge-warning font-bold">Penanggung Jawab (PJ)</span>
+              <span class="text-xs text-muted">{{ currentDateFormatted }}</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-ink mt-1.5">
+              Selamat Datang, {{ currentUser ? currentUser.nama : 'PJ Kelas' }}!
+            </h1>
+            <p class="text-sm text-muted mt-1">
+              Kelola pengajuan reservasi ruangan perkuliahan untuk kelas yang Anda ampu di sini.
+            </p>
+          </div>
+
+          <div class="flex items-center gap-2.5 w-full sm:w-auto">
+            <a
+              :href="routes.pj.formReservasi"
+              class="btn btn-primary w-full sm:w-auto py-2.5 px-4 text-sm font-semibold flex items-center justify-center gap-2 shadow-xs"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>Buat Reservasi Baru</span>
+            </a>
+            <a
+              :href="routes.public.pilihGedung"
+              class="btn btn-secondary w-full sm:w-auto py-2.5 px-3.5 text-sm font-semibold flex items-center justify-center gap-1.5"
+              title="Cek ketersediaan via denah"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+              <span class="hidden md:inline">Lihat Denah</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Empat Kartu Statistik Ringkasan -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 mb-8">
+        <!-- Kartu 1: Disetujui / Aktif -->
+        <div class="card p-4 sm:p-5 bg-white border border-border rounded-xl shadow-xs">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-muted">Disetujui / Aktif</span>
+            <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+          </div>
+          <div class="text-2xl sm:text-3xl font-extrabold text-emerald-700">{{ stats.disetujui }}</div>
+          <div class="text-[11px] text-muted mt-1">Siap digunakan kuliah</div>
+        </div>
+
+        <!-- Kartu 2: Menunggu Persetujuan -->
+        <div class="card p-4 sm:p-5 bg-white border border-border rounded-xl shadow-xs">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-muted">Menunggu ACC</span>
+            <div class="w-8 h-8 rounded-lg bg-yellow-100 text-yellow-800 flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+          </div>
+          <div class="text-2xl sm:text-3xl font-extrabold text-yellow-700">{{ stats.menunggu }}</div>
+          <div class="text-[11px] text-muted mt-1">Dalam antrean dosen</div>
+        </div>
+
+        <!-- Kartu 3: Ditolak -->
+        <div class="card p-4 sm:p-5 bg-white border border-border rounded-xl shadow-xs">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-muted">Ditolak</span>
+            <div class="w-8 h-8 rounded-lg bg-red-100 text-red-700 flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            </div>
+          </div>
+          <div class="text-2xl sm:text-3xl font-extrabold text-red-700">{{ stats.ditolak }}</div>
+          <div class="text-[11px] text-muted mt-1">Dapat diajukan ulang</div>
+        </div>
+
+        <!-- Kartu 4: Total Booking -->
+        <div class="card p-4 sm:p-5 bg-white border border-border rounded-xl shadow-xs">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-muted">Total Riwayat</span>
+            <div class="w-8 h-8 rounded-lg bg-primary-soft text-primary flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+          </div>
+          <div class="text-2xl sm:text-3xl font-extrabold text-ink">{{ stats.total }}</div>
+          <div class="text-[11px] text-muted mt-1">Seluruh pengajuan Anda</div>
+        </div>
+      </div>
+
+      <!-- 3. Dua Kolom: 5 Booking Terbaru (Kiri) & Notifikasi Terbaru + Pintasan (Kanan) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <!-- Kolom Kiri: 5 Booking Terbaru (8 Kolom) -->
+        <div class="lg:col-span-8 space-y-4">
+          <div class="card p-5 sm:p-6 bg-white border border-border rounded-xl shadow-xs">
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-border">
+              <div>
+                <h2 class="text-base sm:text-lg font-bold text-ink">Pengajuan Reservasi Terbaru</h2>
+                <p class="text-xs text-muted">5 reservasi terkini yang Anda ajukan</p>
+              </div>
+              <a :href="routes.pj.riwayatBooking" class="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
+                Lihat Semua Riwayat &rarr;
+              </a>
+            </div>
+
+            <!-- Tabel / List Booking -->
+            <div v-if="recentBookings.length === 0" class="p-8 text-center bg-surface rounded-xl border border-dashed border-border text-muted text-sm">
+              <svg class="w-10 h-10 mx-auto text-muted/50 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              Belum ada riwayat booking. Silakan buat reservasi pertama Anda!
+              <div class="mt-3">
+                <a :href="routes.pj.formReservasi" class="btn btn-primary btn-sm">Buat Reservasi Sekarang</a>
+              </div>
+            </div>
+
+            <div v-else class="divide-y divide-border">
+              <div
+                v-for="b in recentBookings"
+                :key="b.id"
+                class="py-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:bg-surface/50 rounded-lg px-2 transition"
+              >
+                <div>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-bold text-sm text-ink">{{ getRoomCode(b.ruanganId) }}</span>
+                    <span class="badge" :class="getBadgeClass(b.status)">{{ getStatusLabel(b.status) }}</span>
+                    <span v-if="b.isFallback" class="badge badge-warning text-[10px]" title="Peringatan Fallback: Menggunakan ruangan lebih besar">
+                      Fallback
+                    </span>
+                  </div>
+                  <div class="text-xs text-ink font-semibold mt-1">
+                    {{ getCourseName(b.mataKuliahId || b.courseId) }}
+                  </div>
+                  <div class="text-xs text-muted mt-0.5 flex items-center gap-2 flex-wrap">
+                    <span>{{ formatDate(b.tanggal) }}</span>
+                    <span>&bull;</span>
+                    <span>{{ b.jamMulai }} - {{ b.jamSelesai }} WIB</span>
+                    <span>&bull;</span>
+                    <span>Dosen: {{ getDosenName(b.dosenId) }}</span>
+                  </div>
+                </div>
+
+                <a
+                  :href="routes.pj.detailBooking + '?id=' + b.id"
+                  class="btn btn-secondary btn-sm text-xs font-semibold flex items-center gap-1.5 flex-shrink-0"
+                >
+                  <span>Detail</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kolom Kanan: Notifikasi Terbaru & Pintasan (4 Kolom) -->
+        <div class="lg:col-span-4 space-y-6">
+          <!-- Notifikasi Terbaru -->
+          <div class="card p-5 bg-white border border-border rounded-xl shadow-xs">
+            <div class="flex items-center justify-between mb-3 pb-2 border-b border-border">
+              <h2 class="text-sm font-bold text-ink flex items-center gap-1.5">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                Notifikasi Terbaru
+              </h2>
+              <a :href="routes.shared.notifikasi" class="text-xs text-primary font-semibold hover:underline">
+                Semua
+              </a>
+            </div>
+
+            <div v-if="recentNotifs.length === 0" class="p-4 text-center text-xs text-muted bg-surface rounded-lg">
+              Tidak ada notifikasi baru saat ini.
+            </div>
+
+            <div v-else class="space-y-2.5">
+              <a
+                v-for="n in recentNotifs"
+                :key="n.id"
+                :href="routes.shared.notifikasi"
+                class="block p-2.5 rounded-lg border border-border bg-white hover:bg-surface hover:border-primary transition"
+                :class="{ 'bg-primary-soft/40 border-primary-soft': !n.read }"
+              >
+                <div class="flex items-start justify-between gap-1 mb-1">
+                  <span class="text-xs font-bold text-ink truncate">{{ n.title }}</span>
+                  <span v-if="!n.read" class="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1"></span>
+                </div>
+                <p class="text-[11px] text-muted line-clamp-2">{{ n.message }}</p>
+                <div class="text-[10px] text-muted/70 mt-1">{{ formatDateTime(n.createdAt) }}</div>
+              </a>
+            </div>
+          </div>
+
+          <!-- Pintasan Menu Cepat -->
+          <div class="card p-5 bg-white border border-border rounded-xl shadow-xs">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-muted mb-3">Pintasan Cepat</h2>
+            <div class="space-y-2 text-xs font-semibold">
+              <a :href="routes.pj.formReservasi" class="flex items-center justify-between p-2.5 rounded-lg border border-border bg-surface hover:bg-primary-soft hover:border-primary transition text-ink hover:text-primary">
+                <span class="flex items-center gap-2">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  Form Reservasi Ruangan
+                </span>
+                <span class="text-muted">&rarr;</span>
+              </a>
+
+              <a :href="routes.public.pilihGedung" class="flex items-center justify-between p-2.5 rounded-lg border border-border bg-surface hover:bg-primary-soft hover:border-primary transition text-ink hover:text-primary">
+                <span class="flex items-center gap-2">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+                  Denah Gedung Interaktif
+                </span>
+                <span class="text-muted">&rarr;</span>
+              </a>
+
+              <a :href="routes.mahasiswa.mataKuliahSaya" class="flex items-center justify-between p-2.5 rounded-lg border border-border bg-surface hover:bg-primary-soft hover:border-primary transition text-ink hover:text-primary">
+                <span class="flex items-center gap-2">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                  Mata Kuliah & Relasi Dosen
+                </span>
+                <span class="text-muted">&rarr;</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-xs text-muted border-t border-border bg-white mt-12">
+      &copy; 2024 Universitas Negeri Jakarta &mdash; Sistem Informasi Pemetaan & Reservasi Ruang Kelas
+    </footer>
+  </div>
+
+  <!-- Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.5.43/dist/vue.global.prod.js"></script>
+  <script src="../assets/js/core/config.js"></script>
+  <script src="../assets/js/core/routes.js"></script>
+  <script src="../assets/js/core/utils.js"></script>
+  <script src="../assets/js/core/store.js"></script>
+  <script src="../assets/js/data/buildings.js"></script>
+  <script src="../assets/js/data/rooms.js"></script>
+  <script src="../assets/js/data/courses.js"></script>
+  <script src="../assets/js/data/relations.js"></script>
+  <script src="../assets/js/data/bookings.js"></script>
+  <script src="../assets/js/data/notifications.js"></script>
+  <script src="../assets/js/data/users.js"></script>
+  <script src="../assets/js/core/api.js"></script>
+  <script src="../assets/js/core/auth.js"></script>
+  <script src="../assets/js/core/guard.js"></script>
+  <script src="../navigation/navbar-pj.js"></script>
+  <script src="../assets/js/pages/pj/dashboard-booking.js"></script>
+</body>
+</html>

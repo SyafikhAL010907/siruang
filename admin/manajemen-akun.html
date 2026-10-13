@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Manajemen Akun Pengguna | Reservasi Ruangan UNJ</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="../assets/js/core/tailwind-config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/global.css" />
+  <link rel="stylesheet" href="../assets/css/admin/manajemen-akun.css" />
+</head>
+<body class="bg-surface text-ink antialiased" style="font-family:'Inter',system-ui,sans-serif;">
+  <div id="app" v-cloak class="min-h-screen flex flex-col justify-between">
+    <!-- Navbar Admin -->
+    <app-navbar></app-navbar>
+
+    <!-- Konten Utama -->
+    <main class="flex-1 mx-auto max-w-7xl w-full px-4 py-6 sm:py-8">
+      <!-- Breadcrumb -->
+      <nav class="flex items-center text-xs text-muted mb-4 gap-1.5" aria-label="Breadcrumb">
+        <a :href="routes.admin.dashboard" class="hover:text-primary">Admin</a>
+        <span>/</span>
+        <span class="text-ink font-medium">Manajemen Akun</span>
+      </nav>
+
+      <!-- Header Halaman & Tambah Akun -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-ink">
+            Manajemen Akun Pengguna
+          </h1>
+          <p class="text-xs sm:text-sm text-muted mt-1">
+            Verifikasi pendaftaran pengguna baru, atur hak akses (role), dan kelola status akun civitas akademika.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          @click="openCreateModal"
+          class="btn btn-primary text-xs py-2.5 px-4 font-semibold shadow-xs flex items-center gap-1.5"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>Tambah Akun Baru</span>
+        </button>
+      </div>
+
+      <!-- Pill Metrik Akun -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 text-xs">
+        <div class="p-3 bg-white rounded-xl border border-border shadow-xs">
+          <div class="text-muted">Total Pengguna</div>
+          <div class="text-xl font-bold text-ink mt-0.5">{{ summaryStats.total }} Akun</div>
+        </div>
+        <div
+          class="p-3 rounded-xl border shadow-xs transition"
+          :class="summaryStats.menunggu > 0 ? 'bg-yellow-50 border-yellow-200 text-yellow-900' : 'bg-white border-border text-ink'"
+        >
+          <div :class="summaryStats.menunggu > 0 ? 'text-yellow-700' : 'text-muted'">Menunggu Verifikasi</div>
+          <div class="text-xl font-bold mt-0.5">{{ summaryStats.menunggu }} Akun</div>
+        </div>
+        <div class="p-3 bg-white rounded-xl border border-border shadow-xs">
+          <div class="text-muted">Akun Aktif</div>
+          <div class="text-xl font-bold text-emerald-800 mt-0.5">{{ summaryStats.aktif }} Akun</div>
+        </div>
+        <div class="p-3 bg-white rounded-xl border border-border shadow-xs">
+          <div class="text-muted">Akun Nonaktif</div>
+          <div class="text-xl font-bold text-red-800 mt-0.5">{{ summaryStats.nonaktif }} Akun</div>
+        </div>
+      </div>
+
+      <!-- Toolbar Filter & Pencarian -->
+      <div class="card p-4 bg-white border border-border rounded-xl shadow-xs mb-6 grid grid-cols-1 sm:grid-cols-12 gap-3">
+        <!-- Input Search -->
+        <div class="sm:col-span-6 relative">
+          <input
+            type="text"
+            v-model="searchQuery"
+            placeholder="Cari nama, NIM/NIP, email, atau prodi..."
+            class="form-input text-xs pl-9 pr-4 py-2 w-full"
+          />
+          <svg class="absolute left-3 top-2.5 text-muted pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+
+        <!-- Filter Role -->
+        <div class="sm:col-span-3">
+          <select v-model="filterRole" class="form-select text-xs py-2 w-full">
+            <option value="semua">Semua Role</option>
+            <option value="mahasiswa">Mahasiswa</option>
+            <option value="pj">Penanggung Jawab (PJ)</option>
+            <option value="dosen">Dosen</option>
+            <option value="admin">Administrator</option>
+          </select>
+        </div>
+
+        <!-- Filter Status & Reset -->
+        <div class="sm:col-span-3 flex items-center gap-2">
+          <select v-model="filterStatus" class="form-select text-xs py-2 w-full">
+            <option value="semua">Semua Status</option>
+            <option value="aktif">Aktif</option>
+            <option value="menunggu_verifikasi">Menunggu Verifikasi</option>
+            <option value="nonaktif">Nonaktif</option>
+          </select>
+          <button
+            v-if="filterRole !== 'semua' || filterStatus !== 'semua' || searchQuery"
+            type="button"
+            @click="filterRole = 'semua'; filterStatus = 'semua'; searchQuery = ''"
+            class="btn btn-secondary text-xs py-2 px-3 whitespace-nowrap"
+            title="Reset Filter"
+          >
+            Reset
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div v-if="loading" class="card p-12 bg-white border border-border rounded-xl text-center">
+        <div class="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-3"></div>
+        <p class="text-xs text-muted">Memuat data akun pengguna...</p>
+      </div>
+
+      <!-- Empty State -->
+      <div v-else-if="filteredUsers.length === 0" class="card p-12 bg-white border border-border rounded-xl text-center shadow-xs">
+        <div class="w-12 h-12 rounded-full bg-surface text-muted border border-border flex items-center justify-center mx-auto mb-3">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        </div>
+        <h3 class="text-base font-bold text-ink">Tidak Ada Akun Ditemukan</h3>
+        <p class="text-xs text-muted max-w-sm mx-auto mt-1">
+          Tidak ada data pengguna yang sesuai dengan filter pencarian saat ini.
+        </p>
+      </div>
+
+      <!-- Tabel Akun Pengguna (Desktop & Tablet) -->
+      <div v-else class="space-y-4">
+        <div class="hidden sm:block card bg-white border border-border rounded-xl shadow-xs overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-ink">
+              <thead class="bg-primary-soft text-primary font-bold uppercase tracking-wider text-[11px] border-b border-border">
+                <tr>
+                  <th class="py-3.5 px-4 w-12 text-center">No</th>
+                  <th class="py-3.5 px-4">Pengguna</th>
+                  <th class="py-3.5 px-4">Email & Program Studi</th>
+                  <th class="py-3.5 px-4 text-center">Peran (Role)</th>
+                  <th class="py-3.5 px-4 text-center">Status</th>
+                  <th class="py-3.5 px-4 text-right">Aksi Kelola</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border">
+                <tr
+                  v-for="(u, idx) in paginatedUsers"
+                  :key="u.id"
+                  class="hover:bg-surface transition"
+                >
+                  <!-- No -->
+                  <td class="py-3.5 px-4 text-center text-muted font-medium">
+                    {{ (currentPage - 1) * perPage + idx + 1 }}
+                  </td>
+
+                  <!-- Pengguna & Avatar -->
+                  <td class="py-3.5 px-4">
+                    <div class="flex items-center gap-3">
+                      <div class="user-avatar-badge bg-primary-soft text-primary">
+                        {{ u.nama ? u.nama.charAt(0) : 'U' }}
+                      </div>
+                      <div>
+                        <div class="font-bold text-ink text-sm">{{ u.nama }}</div>
+                        <div class="text-[11px] text-muted font-mono">NIM/NIP: {{ u.nim_nip }}</div>
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- Email & Prodi -->
+                  <td class="py-3.5 px-4">
+                    <div class="font-medium text-ink">{{ u.email }}</div>
+                    <div class="text-[11px] text-muted">{{ u.prodi || 'Fakultas Teknik' }}</div>
+                  </td>
+
+                  <!-- Role Badge -->
+                  <td class="py-3.5 px-4 text-center">
+                    <span
+                      class="badge text-[11px] font-semibold uppercase tracking-wider"
+                      :class="{
+                        'badge-info': u.role === 'mahasiswa',
+                        'badge-warning': u.role === 'pj',
+                        'badge-success': u.role === 'dosen',
+                        'bg-purple-100 text-purple-800 border border-purple-200': u.role === 'admin'
+                      }"
+                    >
+                      {{ u.role }}
+                    </span>
+                  </td>
+
+                  <!-- Status Badge -->
+                  <td class="py-3.5 px-4 text-center">
+                    <span
+                      class="badge text-[11px] font-semibold"
+                      :class="{
+                        'badge-success': u.status === 'aktif',
+                        'badge-warning': u.status === 'menunggu_verifikasi',
+                        'badge-danger': u.status === 'nonaktif'
+                      }"
+                    >
+                      {{ u.status === 'menunggu_verifikasi' ? 'Menunggu ACC' : u.status }}
+                    </span>
+                  </td>
+
+                  <!-- Aksi Kelola -->
+                  <td class="py-3.5 px-4 text-right">
+                    <div class="inline-flex items-center gap-1.5 justify-end">
+                      <!-- Tombol Verifikasi Akun Baru -->
+                      <button
+                        v-if="u.status === 'menunggu_verifikasi'"
+                        type="button"
+                        @click="verifyUser(u)"
+                        class="btn btn-primary text-xs py-1.5 px-2.5 font-semibold shadow-xs"
+                        :disabled="actionLoading"
+                        title="Verifikasi Akun Ini"
+                      >
+                        Verifikasi
+                      </button>
+
+                      <!-- Tombol Ubah Role -->
+                      <button
+                        type="button"
+                        @click="openRoleModal(u)"
+                        class="btn btn-secondary text-xs py-1.5 px-2.5 font-medium"
+                        :disabled="actionLoading"
+                        title="Ubah Role Pengguna"
+                      >
+                        Ubah Role
+                      </button>
+
+                      <!-- Tombol Toggle Nonaktif / Aktifkan -->
+                      <button
+                        v-if="u.id !== currentUser.id"
+                        type="button"
+                        @click="toggleUserStatus(u)"
+                        class="btn text-xs py-1.5 px-2.5 font-medium"
+                        :class="u.status === 'aktif' ? 'btn-danger' : 'btn-secondary'"
+                        :disabled="actionLoading"
+                        :title="u.status === 'aktif' ? 'Nonaktifkan Akun' : 'Aktifkan Akun'"
+                      >
+                        {{ u.status === 'aktif' ? 'Nonaktifkan' : 'Aktifkan' }}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tampilan Mobile (Kartu) -->
+        <div class="sm:hidden space-y-3">
+          <div
+            v-for="u in paginatedUsers"
+            :key="u.id"
+            class="card p-4 bg-white border border-border rounded-xl shadow-xs"
+          >
+            <div class="flex items-start justify-between mb-2">
+              <span
+                class="badge text-[10px] font-bold"
+                :class="{
+                  'badge-success': u.status === 'aktif',
+                  'badge-warning': u.status === 'menunggu_verifikasi',
+                  'badge-danger': u.status === 'nonaktif'
+                }"
+              >
+                {{ u.status }}
+              </span>
+              <span class="badge text-[10px] font-semibold uppercase">{{ u.role }}</span>
+            </div>
+
+            <h3 class="text-base font-bold text-ink">{{ u.nama }}</h3>
+            <div class="text-xs text-muted mb-3 space-y-0.5">
+              <div>NIM/NIP: <span class="font-mono text-ink">{{ u.nim_nip }}</span></div>
+              <div>Email: {{ u.email }}</div>
+              <div>Prodi: {{ u.prodi }}</div>
+            </div>
+
+            <div class="flex items-center justify-end gap-1.5 pt-2 border-t border-border">
+              <button
+                v-if="u.status === 'menunggu_verifikasi'"
+                type="button"
+                @click="verifyUser(u)"
+                class="btn btn-primary text-xs py-1.5 px-2.5"
+                :disabled="actionLoading"
+              >
+                Verifikasi
+              </button>
+              <button
+                type="button"
+                @click="openRoleModal(u)"
+                class="btn btn-secondary text-xs py-1.5 px-2.5"
+                :disabled="actionLoading"
+              >
+                Ubah Role
+              </button>
+              <button
+                v-if="u.id !== currentUser.id"
+                type="button"
+                @click="toggleUserStatus(u)"
+                class="btn text-xs py-1.5 px-2.5"
+                :class="u.status === 'aktif' ? 'btn-danger' : 'btn-secondary'"
+                :disabled="actionLoading"
+              >
+                {{ u.status === 'aktif' ? 'Nonaktif' : 'Aktifkan' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Paginasi -->
+        <div v-if="totalPages > 1" class="pagination-container">
+          <div class="text-xs text-muted">
+            Menampilkan halaman <strong>{{ currentPage }}</strong> dari <strong>{{ totalPages }}</strong> (Total {{ filteredUsers.length }} akun)
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button
+              type="button"
+              @click="prevPage"
+              :disabled="currentPage === 1"
+              class="btn btn-secondary text-xs py-1.5 px-3"
+            >
+              &larr; Sebelumnya
+            </button>
+            <button
+              type="button"
+              @click="nextPage"
+              :disabled="currentPage === totalPages"
+              class="btn btn-secondary text-xs py-1.5 px-3"
+            >
+              Selanjutnya &rarr;
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-xs text-muted border-t border-border bg-white mt-12">
+      &copy; 2024 Universitas Negeri Jakarta &mdash; Sistem Informasi Pemetaan & Reservasi Ruang Kelas
+    </footer>
+
+    <!-- Modal Ubah Role 🆕 -->
+    <div
+      v-if="roleModalOpen"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 backdrop-blur-xs"
+      @click.self="closeRoleModal"
+    >
+      <div class="card p-6 bg-white border border-border rounded-2xl shadow-xl max-w-sm w-full">
+        <div class="flex items-start justify-between mb-4">
+          <h3 class="text-base font-bold text-ink">Ubah Peran (Role) Pengguna</h3>
+          <button @click="closeRoleModal" class="text-muted hover:text-ink text-lg">&times;</button>
+        </div>
+
+        <div v-if="selectedUserForRole" class="p-3 bg-surface rounded-xl border border-border text-xs mb-4">
+          <div><strong>Pengguna:</strong> {{ selectedUserForRole.nama }}</div>
+          <div><strong>NIM/NIP:</strong> {{ selectedUserForRole.nim_nip }}</div>
+          <div><strong>Role Saat Ini:</strong> <span class="capitalize font-bold text-primary">{{ selectedUserForRole.role }}</span></div>
+        </div>
+
+        <div class="form-group mb-4">
+          <label for="select-new-role" class="form-label text-xs">Pilih Role Baru:</label>
+          <select id="select-new-role" v-model="newRoleValue" class="form-select text-xs">
+            <option value="mahasiswa">Mahasiswa (Akses Standar)</option>
+            <option value="pj">Penanggung Jawab / PJ (Hak Booking)</option>
+            <option value="dosen">Dosen (Hak Persetujuan / ACC)</option>
+            <option value="admin">Administrator (Hak Penuh)</option>
+          </select>
+          <p class="text-[11px] text-muted mt-1.5">
+            Perubahan role akan langsung memperbarui hak akses menu pengguna di sistem.
+          </p>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-border">
+          <button
+            type="button"
+            @click="closeRoleModal"
+            class="btn btn-secondary text-xs py-2 px-3"
+            :disabled="actionLoading"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            @click="confirmChangeRole"
+            class="btn btn-primary text-xs py-2 px-4 font-semibold"
+            :disabled="actionLoading"
+          >
+            Simpan Perubahan
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Tambah Akun Baru 🆕 -->
+    <div
+      v-if="createModalOpen"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 backdrop-blur-xs"
+      @click.self="closeCreateModal"
+    >
+      <div class="card p-6 bg-white border border-border rounded-2xl shadow-xl max-w-md w-full">
+        <div class="flex items-start justify-between mb-4">
+          <h3 class="text-base font-bold text-ink">Tambah Akun Pengguna Baru</h3>
+          <button @click="closeCreateModal" class="text-muted hover:text-ink text-lg">&times;</button>
+        </div>
+
+        <div class="space-y-3">
+          <div class="form-group">
+            <label for="new-nim" class="form-label text-xs">NIM / NIP <span class="required">*</span></label>
+            <input
+              id="new-nim"
+              type="text"
+              v-model="newUser.nim_nip"
+              class="form-input text-xs"
+              :class="{ 'is-error': createErrors.nim_nip }"
+              placeholder="Contoh: 198501012010011001"
+            />
+            <p v-if="createErrors.nim_nip" class="form-error text-[11px] mt-1">{{ createErrors.nim_nip }}</p>
+          </div>
+
+          <div class="form-group">
+            <label for="new-nama" class="form-label text-xs">Nama Lengkap <span class="required">*</span></label>
+            <input
+              id="new-nama"
+              type="text"
+              v-model="newUser.nama"
+              class="form-input text-xs"
+              :class="{ 'is-error': createErrors.nama }"
+              placeholder="Contoh: Dr. Ir. Ahmad Subarjo, M.T."
+            />
+            <p v-if="createErrors.nama" class="form-error text-[11px] mt-1">{{ createErrors.nama }}</p>
+          </div>
+
+          <div class="form-group">
+            <label for="new-email" class="form-label text-xs">Email UNJ <span class="required">*</span></label>
+            <input
+              id="new-email"
+              type="email"
+              v-model="newUser.email"
+              class="form-input text-xs"
+              :class="{ 'is-error': createErrors.email }"
+              placeholder="ahmad.subarjo@unj.ac.id"
+            />
+            <p v-if="createErrors.email" class="form-error text-[11px] mt-1">{{ createErrors.email }}</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="form-group">
+              <label for="new-role" class="form-label text-xs">Role</label>
+              <select id="new-role" v-model="newUser.role" class="form-select text-xs">
+                <option value="mahasiswa">Mahasiswa</option>
+                <option value="pj">PJ Kelas</option>
+                <option value="dosen">Dosen</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="new-status" class="form-label text-xs">Status Akun</label>
+              <select id="new-status" v-model="newUser.status" class="form-select text-xs">
+                <option value="aktif">Aktif</option>
+                <option value="menunggu_verifikasi">Menunggu</option>
+                <option value="nonaktif">Nonaktif</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="new-prodi" class="form-label text-xs">Program Studi</label>
+            <select id="new-prodi" v-model="newUser.prodi" class="form-select text-xs">
+              <option v-for="p in prodiList" :key="p.id" :value="p.nama">{{ p.nama }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-4 mt-2 border-t border-border">
+          <button
+            type="button"
+            @click="closeCreateModal"
+            class="btn btn-secondary text-xs py-2 px-3"
+            :disabled="actionLoading"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            @click="submitCreateUser"
+            class="btn btn-primary text-xs py-2 px-4 font-semibold"
+            :disabled="actionLoading"
+          >
+            Tambahkan Akun
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.5.43/dist/vue.global.prod.js"></script>
+  <script src="../assets/js/core/config.js"></script>
+  <script src="../assets/js/core/routes.js"></script>
+  <script src="../assets/js/core/utils.js"></script>
+  <script src="../assets/js/core/store.js"></script>
+  <script src="../assets/js/data/buildings.js"></script>
+  <script src="../assets/js/data/rooms.js"></script>
+  <script src="../assets/js/data/users.js"></script>
+  <script src="../assets/js/data/prodi.js"></script>
+  <script src="../assets/js/data/courses.js"></script>
+  <script src="../assets/js/data/relations.js"></script>
+  <script src="../assets/js/data/bookings.js"></script>
+  <script src="../assets/js/data/notifications.js"></script>
+  <script src="../assets/js/data/logs.js"></script>
+  <script src="../assets/js/core/api.js"></script>
+  <script src="../assets/js/core/auth.js"></script>
+  <script src="../assets/js/core/guard.js"></script>
+  <script src="../navigation/navbar-admin.js"></script>
+  <script src="../assets/js/pages/admin/manajemen-akun.js"></script>
+</body>
+</html>

@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Formulir Reservasi Ruangan | Reservasi Ruangan UNJ</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="../assets/js/core/tailwind-config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/global.css" />
+  <link rel="stylesheet" href="../assets/css/pj/form-reservasi.css" />
+</head>
+<body class="bg-surface text-ink antialiased" style="font-family:'Inter',system-ui,sans-serif;">
+  <div id="app" v-cloak class="min-h-screen flex flex-col justify-between">
+    <!-- Navbar PJ / Admin -->
+    <app-navbar></app-navbar>
+
+    <!-- Konten Utama Formulir Reservasi -->
+    <main class="flex-1 mx-auto max-w-4xl w-full px-4 py-8 sm:py-10">
+      <!-- Breadcrumb -->
+      <nav class="flex items-center text-xs text-muted mb-4 gap-1.5" aria-label="Breadcrumb">
+        <a :href="routes.public.landing" class="hover:text-primary">Beranda</a>
+        <span>/</span>
+        <a :href="routes.pj.dashboardBooking" class="hover:text-primary">Dashboard Booking</a>
+        <span>/</span>
+        <span class="text-ink font-medium">Buat Reservasi Ruangan</span>
+      </nav>
+
+      <!-- Kartu Utama Form -->
+      <div class="card p-6 sm:p-8 bg-white border border-border rounded-2xl shadow-sm">
+        <div class="mb-6 pb-4 border-b border-border">
+          <div class="flex items-center gap-2">
+            <span class="badge badge-warning font-bold">Pengajuan Reservasi</span>
+            <span class="text-xs text-muted">Status Awal: Menunggu ACC</span>
+          </div>
+          <h1 class="text-2xl font-bold text-ink mt-1.5">Formulir Pemesanan Ruang Kelas</h1>
+          <p class="text-xs sm:text-sm text-muted mt-0.5">
+            Pastikan tanggal, jam, dan jumlah kelas sesuai dengan jadwal perkuliahan yang akan diselenggarakan.
+          </p>
+        </div>
+
+        <!-- Alert Error Umum -->
+        <div v-if="generalError" class="mb-5 p-3.5 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl flex items-start gap-2" role="alert">
+          <svg class="w-5 h-5 flex-shrink-0 mt-0.5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2"/><line x1="12" y1="8" x2="12" y2="12" stroke-width="2"/><line x1="12" y1="16" x2="12.01" y2="16" stroke-width="2"/></svg>
+          <span>{{ generalError }}</span>
+        </div>
+
+        <form @submit.prevent="handleSubmitBooking" novalidate>
+          <!-- BAGIAN 1: WAKTU & ROMBEL -->
+          <div class="mb-6">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-primary mb-3 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-primary"></span>
+              1. Waktu Perkuliahan & Jumlah Kelas
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <!-- Tanggal -->
+              <div class="form-group">
+                <label for="form-tanggal" class="form-label">Tanggal Reservasi <span class="required">*</span></label>
+                <input
+                  id="form-tanggal"
+                  type="date"
+                  v-model="form.tanggal"
+                  :min="minDate"
+                  @change="onTimeOrRoomChange"
+                  class="form-input"
+                  :class="{ 'is-error': errors.tanggal }"
+                  required
+                />
+                <p v-if="errors.tanggal" class="form-error mt-1">{{ errors.tanggal }}</p>
+              </div>
+
+              <!-- Jam Mulai -->
+              <div class="form-group">
+                <label for="form-jam-mulai" class="form-label">Jam Mulai <span class="required">*</span></label>
+                <select
+                  id="form-jam-mulai"
+                  v-model="form.jamMulai"
+                  @change="onStartTimeChange"
+                  class="form-select font-medium"
+                  :class="{ 'is-error': errors.jamMulai }"
+                  required
+                >
+                  <option v-for="t in timeSlots" :key="t" :value="t">{{ t }} WIB</option>
+                </select>
+                <p v-if="errors.jamMulai" class="form-error mt-1">{{ errors.jamMulai }}</p>
+              </div>
+
+              <!-- Jam Selesai -->
+              <div class="form-group">
+                <label for="form-jam-selesai" class="form-label">Jam Selesai <span class="required">*</span></label>
+                <select
+                  id="form-jam-selesai"
+                  v-model="form.jamSelesai"
+                  @change="onTimeOrRoomChange"
+                  class="form-select font-medium"
+                  :class="{ 'is-error': errors.jamSelesai }"
+                  required
+                >
+                  <option v-for="t in validEndSlots" :key="t" :value="t">{{ t }} WIB</option>
+                </select>
+                <p v-if="errors.jamSelesai" class="form-error mt-1">{{ errors.jamSelesai }}</p>
+              </div>
+            </div>
+
+            <!-- Jumlah Rombel / Kelas -->
+            <div class="mt-4">
+              <label class="form-label block mb-1.5">
+                Kebutuhan Kapasitas Rombel (Jumlah Kelas Bersamaan) <span class="required">*</span>
+              </label>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+                <label
+                  v-for="k in [1, 2, 3]"
+                  :key="k"
+                  class="cursor-pointer border rounded-xl p-3 text-center transition select-none flex flex-col items-center justify-center"
+                  :class="form.jumlahKelas === k ? 'border-primary bg-primary-soft text-primary font-bold shadow-xs' : 'border-border bg-white text-ink hover:border-gray-400'"
+                >
+                  <input
+                    type="radio"
+                    name="jumlahKelas"
+                    :value="k"
+                    v-model.number="form.jumlahKelas"
+                    @change="onTimeOrRoomChange"
+                    class="sr-only"
+                  />
+                  <div class="text-sm sm:text-base font-bold">{{ k }} Kelas Rombel</div>
+                  <div class="text-[10px] sm:text-[11px] text-muted font-normal mt-0.5">~{{ k * 35 }} Mahasiswa</div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- BAGIAN 2: MATA KULIAH & DOSEN -->
+          <div class="mb-6 pt-5 border-t border-border">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-primary mb-3 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-primary"></span>
+              2. Mata Kuliah & Dosen Pengampu
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <!-- Dropdown Mata Kuliah -->
+              <div class="form-group">
+                <label for="form-matkul" class="form-label">Mata Kuliah <span class="required">*</span></label>
+                <select
+                  id="form-matkul"
+                  v-model="form.courseId"
+                  @change="onCourseChange"
+                  class="form-select font-medium"
+                  :class="{ 'is-error': errors.courseId }"
+                  required
+                >
+                  <option value="" disabled>-- Pilih Mata Kuliah --</option>
+                  <option v-for="c in courseOptions" :key="c.id" :value="c.id">
+                    {{ c.kode }} &mdash; {{ c.nama }} ({{ c.sks }} SKS)
+                  </option>
+                </select>
+                <p v-if="errors.courseId" class="form-error mt-1">{{ errors.courseId }}</p>
+                <p v-if="hasActiveRelation" class="text-[11px] text-emerald-700 mt-1 flex items-center gap-1">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  Relasi resmi terdeteksi. Dosen otomatis ditentukan.
+                </p>
+              </div>
+
+              <!-- Dosen Pengampu (Terisi otomatis bila relasi aktif) -->
+              <div class="form-group">
+                <label for="form-dosen" class="form-label flex items-center justify-between">
+                  <span>Dosen Pengampu <span class="required">*</span></span>
+                  <span v-if="hasActiveRelation" class="text-[11px] text-primary font-bold">Otomatis Terisi</span>
+                </label>
+
+                <!-- Jika relasi aktif, buat input terkunci -->
+                <template v-if="hasActiveRelation">
+                  <input
+                    type="text"
+                    :value="autoDosenName"
+                    class="form-input bg-gray-50 text-gray-700 font-semibold cursor-not-allowed"
+                    disabled
+                    readonly
+                  />
+                  <p class="text-[11px] text-muted mt-1">Dosen diverifikasi sesuai penugasan relasi akademik.</p>
+                </template>
+
+                <!-- Jika tidak ada relasi resmi, dropdown manual dengan peringatan ⚠️ -->
+                <template v-else>
+                  <select
+                    id="form-dosen"
+                    v-model="form.dosenId"
+                    class="form-select"
+                    :class="{ 'is-error': errors.dosenId }"
+                    required
+                  >
+                    <option value="" disabled>-- Pilih Dosen Pengampu --</option>
+                    <option v-for="d in dosenList" :key="d.id" :value="d.id">
+                      {{ d.nama }}
+                    </option>
+                  </select>
+                  <p class="text-[11px] text-yellow-700 mt-1 flex items-center gap-1 font-medium">
+                    ⚠️ Relasi belum terhubung resmi di sistem. Silakan pilih dosen manual.
+                  </p>
+                </template>
+                <p v-if="errors.dosenId" class="form-error mt-1">{{ errors.dosenId }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- BAGIAN 3: PEMILIHAN RUANGAN & CEK REAL-TIME -->
+          <div class="mb-6 pt-5 border-t border-border">
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="text-xs font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-primary"></span>
+                3. Pilihan Ruangan
+              </h2>
+              <a :href="routes.public.denah" target="_blank" class="text-xs text-primary font-semibold hover:underline flex items-center gap-1">
+                Buka Denah 2D &rarr;
+              </a>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <!-- Dropdown Ruangan -->
+              <div class="form-group sm:col-span-2">
+                <label for="form-ruangan" class="form-label">Ruang Kelas <span class="required">*</span></label>
+                <select
+                  id="form-ruangan"
+                  v-model="form.ruanganId"
+                  @change="onTimeOrRoomChange"
+                  class="form-select font-medium text-sm"
+                  :class="{ 'is-error': errors.ruanganId }"
+                  required
+                >
+                  <option value="" disabled>-- Pilih Ruang Kelas --</option>
+                  <optgroup label="Gedung L (Rumpun Elektro)">
+                    <option v-for="r in roomsL" :key="r.id" :value="r.id">
+                      {{ r.kode }} &mdash; {{ r.nama }} (Kapasitas: {{ r.kapasitas }} Rombel)
+                    </option>
+                  </optgroup>
+                  <optgroup label="Gedung L (Rumpun Sipil)">
+                    <option v-for="r in roomsLS" :key="r.id" :value="r.id">
+                      {{ r.kode }} &mdash; {{ r.nama }} (Kapasitas: {{ r.kapasitas }} Rombel)
+                    </option>
+                  </optgroup>
+                </select>
+                <p v-if="errors.ruanganId" class="form-error mt-1">{{ errors.ruanganId }}</p>
+              </div>
+            </div>
+
+            <!-- Kartu Status Ketersediaan Ruangan Terpilih (Real-Time) -->
+            <div v-if="selectedRoomObj" class="mt-3 p-4 bg-surface rounded-xl border border-border">
+              <div class="flex items-start justify-between">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="font-bold text-sm text-ink">{{ selectedRoomObj.kode }} ({{ selectedRoomObj.nama }})</span>
+                    <span class="badge" :class="roomCheckBadgeClass">{{ roomCheckStatusText }}</span>
+                  </div>
+                  <div class="text-xs text-muted mt-1">
+                    Kapasitas Ruang: <strong>{{ selectedRoomObj.kapasitas }} Kelas</strong> &bull;
+                    Sisa Slot Kosong: <strong>{{ roomCheckData.sisaKapasitas }} Kelas</strong>
+                  </div>
+                </div>
+
+                <div class="text-right text-xs">
+                  <div class="font-bold text-ink">Gedung {{ selectedRoomObj.gedung }}</div>
+                  <div class="text-muted">Lantai {{ selectedRoomObj.lantai }}</div>
+                </div>
+              </div>
+
+              <!-- Peringatan Konflik Bentrok Jadwal -->
+              <div v-if="hasConflict" class="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-800 flex items-start gap-2">
+                <svg class="w-4 h-4 flex-shrink-0 mt-0.5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2"/><line x1="12" y1="8" x2="12" y2="12" stroke-width="2"/><line x1="12" y1="16" x2="12.01" y2="16" stroke-width="2"/></svg>
+                <div>
+                  <strong>Terjadi Bentrok Jadwal / Kapasitas Penuh:</strong>
+                  Ruangan ini tidak memiliki kapasitas yang cukup untuk {{ form.jumlahKelas }} kelas pada jam {{ form.jamMulai }} - {{ form.jamSelesai }} WIB. Silakan pilih ruangan atau slot waktu lain.
+                </div>
+              </div>
+
+              <!-- ⚠️ PERINGATAN FALLBACK PEMBOROSAN (Bagian 9 promt.md) -->
+              <div v-if="isFallbackDetected && !hasConflict" class="mt-3 p-3 bg-amber-50 border border-amber-300 rounded-lg text-xs text-amber-900 flex items-start gap-2">
+                <span class="text-base flex-shrink-0">⚠️</span>
+                <div>
+                  <strong>Peringatan Fallback Alokasi Ruang:</strong>
+                  Ruangan ini berkapasitas besar ({{ selectedRoomObj.kapasitas }} rombel), sedangkan Anda hanya mengajukan untuk <strong>{{ form.jumlahKelas }} kelas</strong>.
+                  Pengajuan ini tetap diperbolehkan, namun akan diberi tanda <span class="badge badge-warning text-[10px]">Fallback</span> dan dilaporkan ke Administrator kampus.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- BAGIAN 4: KEPERLUAN & ALASAN -->
+          <div class="mb-6 pt-5 border-t border-border">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-primary mb-3 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-primary"></span>
+              4. Keperluan Perkuliahan
+            </h2>
+            <div class="form-group">
+              <label for="form-alasan" class="form-label">
+                Alasan / Keterangan Keperluan Reservasi <span class="required">*</span>
+              </label>
+              <textarea
+                id="form-alasan"
+                rows="3"
+                v-model.trim="form.alasan"
+                class="form-textarea"
+                :class="{ 'is-error': errors.alasan }"
+                placeholder="Contoh: Kuliah Pengganti Teori Rangkaian Listrik karena hari libur nasional (minimal 10 karakter)."
+                required
+              ></textarea>
+              <p v-if="errors.alasan" class="form-error mt-1">{{ errors.alasan }}</p>
+            </div>
+          </div>
+
+          <!-- Tombol Aksi Formulir -->
+          <div class="pt-5 border-t border-border flex flex-col sm:flex-row items-center justify-end gap-3">
+            <a :href="routes.pj.dashboardBooking" class="btn btn-secondary w-full sm:w-auto text-sm">
+              Batalkan
+            </a>
+            <button
+              type="submit"
+              :disabled="loading || hasConflict"
+              class="btn btn-primary w-full sm:w-auto text-sm py-2.5 px-6 flex items-center justify-center gap-2 font-semibold shadow-xs"
+            >
+              <svg v-if="loading" class="animate-spin -ml-1 mr-1.5 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+              <span>{{ loading ? 'Mengirim Pengajuan...' : 'Kirim Pengajuan Reservasi' }}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-xs text-muted border-t border-border bg-white mt-12">
+      &copy; 2024 Universitas Negeri Jakarta &mdash; Sistem Informasi Pemetaan & Reservasi Ruang Kelas
+    </footer>
+  </div>
+
+  <!-- Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.5.43/dist/vue.global.prod.js"></script>
+  <script src="../assets/js/core/config.js"></script>
+  <script src="../assets/js/core/routes.js"></script>
+  <script src="../assets/js/core/utils.js"></script>
+  <script src="../assets/js/core/store.js"></script>
+  <script src="../assets/js/data/buildings.js"></script>
+  <script src="../assets/js/data/rooms.js"></script>
+  <script src="../assets/js/data/courses.js"></script>
+  <script src="../assets/js/data/relations.js"></script>
+  <script src="../assets/js/data/bookings.js"></script>
+  <script src="../assets/js/data/notifications.js"></script>
+  <script src="../assets/js/data/logs.js"></script>
+  <script src="../assets/js/data/users.js"></script>
+  <script src="../assets/js/core/api.js"></script>
+  <script src="../assets/js/core/auth.js"></script>
+  <script src="../assets/js/core/guard.js"></script>
+  <script src="../assets/js/components/toast.js"></script>
+  <script src="../navigation/navbar-pj.js"></script>
+  <script src="../assets/js/pages/pj/form-reservasi.js"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+/**
+ * master-data-ruangan.css — Gaya halaman Master Data Ruangan (Halaman 25)
+ */
+
+.facility-chip {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background-color: var(--color-surface, #F5F9F6);
+  border: 1px solid var(--color-border, #D5E2D9);
+}

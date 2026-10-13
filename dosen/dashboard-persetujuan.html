@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard Persetujuan Dosen | Reservasi Ruangan UNJ</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="../assets/js/core/tailwind-config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/global.css" />
+  <link rel="stylesheet" href="../assets/css/dosen/dashboard-persetujuan.css" />
+</head>
+<body class="bg-surface text-ink antialiased" style="font-family:'Inter',system-ui,sans-serif;">
+  <div id="app" v-cloak class="min-h-screen flex flex-col justify-between">
+    <!-- Navbar Dosen -->
+    <app-navbar></app-navbar>
+
+    <!-- Konten Utama -->
+    <main class="flex-1 mx-auto max-w-7xl w-full px-4 py-6 sm:py-8">
+      <!-- Breadcrumb -->
+      <nav class="flex items-center text-xs text-muted mb-4 gap-1.5" aria-label="Breadcrumb">
+        <a :href="routes.public.landing" class="hover:text-primary">Beranda</a>
+        <span>/</span>
+        <span class="text-ink font-medium">Dashboard Persetujuan</span>
+      </nav>
+
+      <!-- Welcome Banner Dosen -->
+      <div class="card p-6 bg-white border border-border rounded-2xl shadow-xs mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-primary-soft text-primary text-xs font-bold mb-2">
+            <span>Portal Dosen Pengampu</span>
+            <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+            <span>Fakultas Teknik UNJ</span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-ink">
+            Selamat Datang, {{ currentUser ? currentUser.nama : 'Bapak/Ibu Dosen' }}
+          </h1>
+          <p class="text-xs sm:text-sm text-muted mt-1">
+            NIP: {{ currentUser ? currentUser.nim_nip : '-' }} &bull; Kelola dan verifikasi permohonan reservasi ruang kelas untuk mata kuliah Anda.
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <a :href="routes.dosen.daftarAccRuangan" class="btn btn-primary text-sm py-2.5 px-4 shadow-xs">
+            Buka Daftar ACC &rarr;
+          </a>
+        </div>
+      </div>
+
+      <!-- Ringkasan Statistik (KPI Cards) -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 mb-8">
+        <!-- Kartu 1: Menunggu -->
+        <div class="card p-4 sm:p-5 bg-white border border-border rounded-xl shadow-xs stat-card-highlight">
+          <div class="flex items-center justify-between text-muted text-xs font-medium">
+            <span>Menunggu ACC</span>
+            <span class="w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse"></span>
+          </div>
+          <div class="mt-2 flex items-baseline gap-2">
+            <span class="text-2xl sm:text-3xl font-extrabold text-ink">{{ stats.menunggu }}</span>
+            <span class="text-xs text-yellow-700 font-semibold" v-if="stats.menunggu > 0">Perlu Aksi</span>
+            <span class="text-xs text-muted" v-else>Bersih</span>
+          </div>
+          <p class="text-[11px] text-muted mt-1">Pengajuan kelas dari PJ Mahasiswa</p>
+        </div>
+
+        <!-- Kartu 2: Disetujui -->
+        <div class="card p-4 sm:p-5 bg-white border border-border rounded-xl shadow-xs stat-card-success">
+          <div class="flex items-center justify-between text-muted text-xs font-medium">
+            <span>Telah Disetujui</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="mt-2 flex items-baseline gap-2">
+            <span class="text-2xl sm:text-3xl font-extrabold text-emerald-900">{{ stats.disetujui }}</span>
+            <span class="text-xs text-emerald-700 font-medium">Terverifikasi</span>
+          </div>
+          <p class="text-[11px] text-muted mt-1">Jadwal perkuliahan telah aktif</p>
+        </div>
+
+        <!-- Kartu 3: Ditolak -->
+        <div class="card p-4 sm:p-5 bg-white border border-border rounded-xl shadow-xs stat-card-danger">
+          <div class="flex items-center justify-between text-muted text-xs font-medium">
+            <span>Ditolak</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </div>
+          <div class="mt-2 flex items-baseline gap-2">
+            <span class="text-2xl sm:text-3xl font-extrabold text-red-900">{{ stats.ditolak }}</span>
+            <span class="text-xs text-red-700 font-medium">Dibatalkan</span>
+          </div>
+          <p class="text-[11px] text-muted mt-1">Alasan dicatat di sistem</p>
+        </div>
+
+        <!-- Kartu 4: Mata Kuliah Diampu -->
+        <div class="card p-4 sm:p-5 bg-white border border-border rounded-xl shadow-xs">
+          <div class="flex items-center justify-between text-muted text-xs font-medium">
+            <span>Mata Kuliah Terkait</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          </div>
+          <div class="mt-2 flex items-baseline gap-2">
+            <span class="text-2xl sm:text-3xl font-extrabold text-ink">{{ stats.totalMatkul }}</span>
+            <span class="text-xs text-muted">Kelas/PJ</span>
+          </div>
+          <p class="text-[11px] text-muted mt-1">Relasi aktif semester ini</p>
+        </div>
+      </div>
+
+      <!-- Grid 2 Kolom: Pengajuan Menunggu & Pintasan / Aktivitas Terkini -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Kolom Kiri (2 Kolom): Pengajuan Menunggu Tanggapan -->
+        <div class="lg:col-span-2 space-y-6">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <h2 class="text-lg font-bold text-ink">Pengajuan Menunggu Tanggapan</h2>
+              <span v-if="stats.menunggu > 0" class="badge badge-warning text-xs font-bold">
+                {{ stats.menunggu }} Baru
+              </span>
+            </div>
+            <a :href="routes.dosen.daftarAccRuangan" class="text-xs font-semibold text-primary hover:underline">
+              Lihat Semua &rarr;
+            </a>
+          </div>
+
+          <!-- Loading State -->
+          <div v-if="loading" class="card p-8 bg-white border border-border rounded-xl text-center">
+            <div class="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-3"></div>
+            <p class="text-xs text-muted">Memuat data pengajuan menunggu...</p>
+          </div>
+
+          <!-- Empty State -->
+          <div v-else-if="pendingBookings.length === 0" class="card p-8 bg-white border border-border rounded-xl text-center shadow-xs">
+            <div class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto mb-3">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <h3 class="text-base font-bold text-ink">Semua Pengajuan Sudah Diproses!</h3>
+            <p class="text-xs text-muted max-w-md mx-auto mt-1">
+              Saat ini tidak ada permohonan reservasi ruang kelas yang menunggu persetujuan Anda. Permohonan baru dari PJ akan muncul di sini.
+            </p>
+          </div>
+
+          <!-- Daftar Pengajuan Menunggu -->
+          <div v-else class="space-y-3">
+            <div
+              v-for="b in pendingBookings"
+              :key="b.id"
+              class="card p-4 sm:p-5 bg-white border border-border rounded-xl shadow-xs hover:border-primary/50 transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+            >
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+                  <span class="badge badge-warning text-[11px] font-bold">Menunggu ACC</span>
+                  <span class="text-xs font-bold text-primary">{{ getCourseName(b.courseId) }}</span>
+                  <span v-if="b.isFallback" class="badge badge-danger text-[10px]" title="Memakai ruangan lebih besar dari kapasitas">
+                    ⚠️ Fallback Ruangan
+                  </span>
+                </div>
+                <div class="text-sm font-bold text-ink flex items-center gap-2 flex-wrap">
+                  <span>Ruang {{ getRoomCode(b.ruanganId) }}</span>
+                  <span class="text-muted font-normal">&bull;</span>
+                  <span class="text-muted font-medium">{{ formatDate(b.tanggal) }}</span>
+                  <span class="text-muted font-normal">&bull;</span>
+                  <span class="text-muted font-medium">{{ formatTime(b.jamMulai, b.jamSelesai) }}</span>
+                </div>
+                <div class="text-xs text-muted mt-1 truncate">
+                  Diajukan oleh: <strong class="text-ink">{{ getRequesterName(b.userId) }}</strong> &bull;
+                  Keperluan: <span class="italic text-ink">"{{ b.alasan }}"</span>
+                </div>
+              </div>
+
+              <!-- Tombol Aksi Cepat -->
+              <div class="flex items-center gap-2 w-full sm:w-auto justify-end flex-shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border">
+                <a
+                  :href="routes.dosen.detailPengajuan + '?id=' + b.id"
+                  class="btn btn-secondary text-xs py-2 px-3"
+                  title="Lihat Detail Lengkap"
+                >
+                  Detail
+                </a>
+                <button
+                  type="button"
+                  @click="openRejectModal(b)"
+                  class="btn btn-danger text-xs py-2 px-3"
+                  :disabled="actionLoading"
+                  title="Tolak Pengajuan"
+                >
+                  Tolak
+                </button>
+                <button
+                  type="button"
+                  @click="quickApprove(b)"
+                  class="btn btn-primary text-xs py-2 px-3 font-semibold shadow-xs"
+                  :disabled="actionLoading"
+                  title="Setujui Pengajuan Langsung"
+                >
+                  ACC
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kolom Kanan (1 Kolom): Riwayat Keputusan & Pintasan -->
+        <div class="space-y-6">
+          <!-- Pintasan Cepat -->
+          <div>
+            <h2 class="text-lg font-bold text-ink mb-3">Pintasan Cepat</h2>
+            <div class="grid grid-cols-1 gap-2.5">
+              <a
+                :href="routes.dosen.daftarAccRuangan"
+                class="card p-3.5 bg-white border border-border rounded-xl shadow-xs hover:border-primary flex items-center justify-between quick-action-card group"
+              >
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-primary-soft text-primary flex items-center justify-center font-bold">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                  </div>
+                  <div>
+                    <div class="text-xs font-bold text-ink group-hover:text-primary transition">Daftar ACC Lengkap</div>
+                    <div class="text-[11px] text-muted">Tab menunggu, disetujui, dan ditolak</div>
+                  </div>
+                </div>
+                <span class="text-xs text-muted group-hover:text-primary">&rarr;</span>
+              </a>
+
+              <a
+                :href="routes.dosen.riwayatKeputusan"
+                class="card p-3.5 bg-white border border-border rounded-xl shadow-xs hover:border-primary flex items-center justify-between quick-action-card group"
+              >
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-primary-soft text-primary flex items-center justify-center font-bold">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+                  </div>
+                  <div>
+                    <div class="text-xs font-bold text-ink group-hover:text-primary transition">Riwayat Keputusan</div>
+                    <div class="text-[11px] text-muted">Arsip keputusan yang pernah Anda buat</div>
+                  </div>
+                </div>
+                <span class="text-xs text-muted group-hover:text-primary">&rarr;</span>
+              </a>
+
+              <a
+                :href="routes.public.denah"
+                class="card p-3.5 bg-white border border-border rounded-xl shadow-xs hover:border-primary flex items-center justify-between quick-action-card group"
+              >
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-primary-soft text-primary flex items-center justify-center font-bold">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+                  </div>
+                  <div>
+                    <div class="text-xs font-bold text-ink group-hover:text-primary transition">Denah 2D Ruangan</div>
+                    <div class="text-[11px] text-muted">Cek visualisasi okupansi gedung</div>
+                  </div>
+                </div>
+                <span class="text-xs text-muted group-hover:text-primary">&rarr;</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Riwayat Keputusan Terkini -->
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="text-lg font-bold text-ink">Keputusan Terkini</h2>
+              <a :href="routes.dosen.riwayatKeputusan" class="text-xs font-semibold text-primary hover:underline">
+                Lihat Semua
+              </a>
+            </div>
+
+            <div v-if="recentDecisions.length === 0" class="card p-5 bg-white border border-border rounded-xl text-center text-xs text-muted">
+              Belum ada riwayat keputusan yang diproses.
+            </div>
+
+            <div v-else class="card bg-white border border-border rounded-xl divide-y divide-border shadow-xs overflow-hidden">
+              <div
+                v-for="d in recentDecisions"
+                :key="d.id"
+                class="p-3.5 hover:bg-surface transition"
+              >
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-bold text-ink">{{ getCourseName(d.courseId) }}</span>
+                  <span
+                    class="badge text-[10px]"
+                    :class="d.status === 'disetujui' ? 'badge-success' : 'badge-danger'"
+                  >
+                    {{ d.status === 'disetujui' ? 'Disetujui' : 'Ditolak' }}
+                  </span>
+                </div>
+                <div class="text-[11px] text-muted flex items-center justify-between">
+                  <span>Ruang {{ getRoomCode(d.ruanganId) }} &bull; {{ formatDate(d.tanggal) }}</span>
+                  <a :href="routes.dosen.detailPengajuan + '?id=' + d.id" class="text-primary font-semibold hover:underline">
+                    Lihat &rarr;
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-xs text-muted border-t border-border bg-white mt-12">
+      &copy; 2024 Universitas Negeri Jakarta &mdash; Sistem Informasi Pemetaan & Reservasi Ruang Kelas
+    </footer>
+
+    <!-- Modal Konfirmasi Penolakan Pengajuan 🆕 -->
+    <div
+      v-if="rejectModalOpen"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 backdrop-blur-xs"
+      @click.self="closeRejectModal"
+    >
+      <div class="card p-6 bg-white border border-border rounded-2xl shadow-xl max-w-md w-full">
+        <div class="flex items-start justify-between mb-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-red-100 text-red-700 flex items-center justify-center font-bold">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-ink">Tolak Pengajuan Ruangan</h3>
+              <p class="text-xs text-muted">Berikan alasan yang jelas kepada pemohon</p>
+            </div>
+          </div>
+          <button @click="closeRejectModal" class="text-muted hover:text-ink text-lg">&times;</button>
+        </div>
+
+        <div v-if="selectedBooking" class="p-3 bg-surface rounded-xl border border-border text-xs mb-4 space-y-1">
+          <div><strong>Mata Kuliah:</strong> {{ getCourseName(selectedBooking.courseId) }}</div>
+          <div><strong>Ruangan:</strong> {{ getRoomCode(selectedBooking.ruanganId) }} &bull; {{ formatDate(selectedBooking.tanggal) }}</div>
+          <div><strong>Pemohon:</strong> {{ getRequesterName(selectedBooking.userId) }}</div>
+        </div>
+
+        <div class="form-group mb-4">
+          <label for="alasan-tolak-input" class="form-label text-xs">
+            Alasan Penolakan <span class="required">* (Minimal 10 karakter)</span>
+          </label>
+          <textarea
+            id="alasan-tolak-input"
+            v-model="alasanTolak"
+            rows="3"
+            class="form-textarea text-xs"
+            :class="{ 'is-error': rejectError }"
+            placeholder="Contoh: Jadwal bentrok dengan ujian praktikum reguler..."
+          ></textarea>
+          <p v-if="rejectError" class="form-error text-[11px] mt-1">{{ rejectError }}</p>
+          <p class="text-[11px] text-muted mt-1">Alasan penolakan akan terkirim ke notifikasi pemohon secara otomatis.</p>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-border">
+          <button
+            type="button"
+            @click="closeRejectModal"
+            class="btn btn-secondary text-xs py-2 px-3"
+            :disabled="actionLoading"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            @click="confirmReject"
+            class="btn btn-danger text-xs py-2 px-4 font-semibold"
+            :disabled="actionLoading"
+          >
+            <span v-if="actionLoading">Memproses...</span>
+            <span v-else>Konfirmasi Tolak</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.5.43/dist/vue.global.prod.js"></script>
+  <script src="../assets/js/core/config.js"></script>
+  <script src="../assets/js/core/routes.js"></script>
+  <script src="../assets/js/core/utils.js"></script>
+  <script src="../assets/js/core/store.js"></script>
+  <script src="../assets/js/data/buildings.js"></script>
+  <script src="../assets/js/data/rooms.js"></script>
+  <script src="../assets/js/data/users.js"></script>
+  <script src="../assets/js/data/courses.js"></script>
+  <script src="../assets/js/data/relations.js"></script>
+  <script src="../assets/js/data/bookings.js"></script>
+  <script src="../assets/js/data/notifications.js"></script>
+  <script src="../assets/js/data/logs.js"></script>
+  <script src="../assets/js/core/api.js"></script>
+  <script src="../assets/js/core/auth.js"></script>
+  <script src="../assets/js/core/guard.js"></script>
+  <script src="../navigation/navbar-dosen.js"></script>
+  <script src="../assets/js/pages/dosen/dashboard-persetujuan.js"></script>
+</body>
+</html>
