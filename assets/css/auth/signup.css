@@ -1,12 +1,4 @@
 /* ============================================
    signup.css — Gaya Khusus Halaman Registrasi
    ============================================ */
-
-[v-cloak] {
-  display: none !important;
-}
-
-.signup-card {
-  max-width: 520px;
-  width: 100%;
-}
+/* Page-specific overrides for signup go here */

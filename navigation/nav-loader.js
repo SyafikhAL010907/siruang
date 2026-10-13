@@ -25,6 +25,7 @@
       mahasiswa: base + 'navigation/navbar-mahasiswa.js',
       guest: base + 'navigation/navbar-guest.js',
     }
+    var file = navbarFiles[role] || navbarFiles.guest
 
     // Muat script navbar
     // Jika masih dalam proses parsing dokumen, gunakan document.write agar sinkron

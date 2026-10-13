@@ -3,218 +3,236 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Login | Reservasi Ruangan UNJ</title>
+  <title>Login | Sistem Informasi Pemetaan & Reservasi Ruang Kelas</title>
+  <meta name="description" content="Masuk ke akun Sistem Informasi Pemetaan & Reservasi Ruang Kelas Universitas Negeri Jakarta" />
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <script src="../assets/js/core/tailwind-config.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../assets/css/global.css" />
+  <link rel="stylesheet" href="../assets/css/auth/auth-shared.css" />
   <link rel="stylesheet" href="../assets/css/auth/login.css" />
 </head>
 <body class="bg-surface text-ink antialiased" style="font-family:'Inter',system-ui,sans-serif;">
-  <div id="app" v-cloak class="min-h-screen flex flex-col justify-between">
+  <div id="app" v-cloak class="min-h-screen flex flex-col">
     <!-- Navbar Pengunjung -->
     <app-navbar></app-navbar>
 
-    <!-- Konten Utama -->
-    <main class="flex-1 flex items-center justify-center px-4 py-8 sm:py-12">
-      <div class="w-full max-w-md">
-        <!-- Kartu Form Login -->
-        <div class="card p-6 sm:p-8 bg-white shadow-md border border-border rounded-xl">
-          <!-- Header Form -->
-          <div class="text-center mb-6">
-            <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary-soft text-primary mb-3">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-                <polyline points="10 17 15 12 10 7"/>
-                <line x1="15" y1="12" x2="3" y2="12"/>
-              </svg>
+    <!-- Auth Split Layout -->
+    <div class="auth-layout">
+      <!-- Left Brand Panel (desktop only) -->
+      <div class="auth-brand-panel">
+        <div class="auth-brand-content">
+          <svg class="auth-brand-icon" viewBox="0 0 56 56" fill="none">
+            <rect width="56" height="56" rx="14" fill="rgba(255,255,255,0.12)"/>
+            <path d="M14 40V20l14-8 14 8v20l-14 8-14-8z" fill="rgba(255,255,255,0.15)"/>
+            <path d="M14 40V20l14-8 14 8v20l-14 8-14-8z" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+            <path d="M28 12v36M14 20l14 8 14-8" stroke="#FFFFFF" stroke-width="1.5" opacity="0.6"/>
+          </svg>
+          <h2 class="auth-brand-title">
+            Pemetaan & Reservasi
+            <span class="auth-brand-title-accent">Ruang Kelas UNJ</span>
+          </h2>
+          <p class="auth-brand-subtitle">
+            Sistem informasi pemetaan spasial 2D untuk efisiensi pemanfaatan ruang kelas kampus.
+          </p>
+          <div class="auth-brand-features">
+            <div class="auth-brand-feature">
+              <span class="auth-brand-feature-icon">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+              </span>
+              Denah Interaktif per Lantai
             </div>
-            <h1 class="text-2xl font-bold text-ink">Masuk ke Akun</h1>
-            <p class="text-sm text-muted mt-1">Sistem Pemetaan & Reservasi Ruang UNJ</p>
-          </div>
-
-          <!-- Alert Pesan Error -->
-          <div v-if="errorMessage" class="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg flex items-start gap-2" role="alert">
-            <svg class="w-5 h-5 flex-shrink-0 mt-0.5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10" stroke-width="2"/>
-              <line x1="12" y1="8" x2="12" y2="12" stroke-width="2" stroke-linecap="round"/>
-              <line x1="12" y1="16" x2="12.01" y2="16" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-            <span>{{ errorMessage }}</span>
-          </div>
-
-          <!-- Form Input -->
-          <form @submit.prevent="handleLogin" novalidate>
-            <!-- Field NIM / NIP / Email -->
-            <div class="form-group mb-4">
-              <label for="identifier" class="form-label flex justify-between items-center">
-                <span>NIM / NIP atau Email <span class="required">*</span></span>
-              </label>
-              <div class="relative">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-muted pointer-events-none">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
-                  </svg>
-                </span>
-                <input
-                  id="identifier"
-                  type="text"
-                  v-model.trim="form.identifier"
-                  class="form-input pl-10"
-                  :class="{ 'is-error': errors.identifier }"
-                  placeholder="Contoh: 1234567890 atau user@unj.ac.id"
-                  autocomplete="username"
-                  required
-                />
-              </div>
-              <p v-if="errors.identifier" class="form-error mt-1">{{ errors.identifier }}</p>
+            <div class="auth-brand-feature">
+              <span class="auth-brand-feature-icon">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </span>
+              Status Okupansi Real-Time
             </div>
-
-            <!-- Field Password -->
-            <div class="form-group mb-5">
-              <div class="flex justify-between items-center mb-1">
-                <label for="password" class="form-label mb-0">
-                  Kata Sandi <span class="required">*</span>
-                </label>
-                <a :href="routes.auth.lupaPassword" class="text-xs font-semibold text-primary hover:underline">
-                  Lupa Password?
-                </a>
-              </div>
-              <div class="relative">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-muted pointer-events-none">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                  </svg>
-                </span>
-                <input
-                  id="password"
-                  :type="showPassword ? 'text' : 'password'"
-                  v-model="form.password"
-                  class="form-input pl-10 pr-10"
-                  :class="{ 'is-error': errors.password }"
-                  placeholder="Masukkan kata sandi Anda"
-                  autocomplete="current-password"
-                  required
-                />
-                <button
-                  type="button"
-                  @click="showPassword = !showPassword"
-                  class="absolute inset-y-0 right-0 flex items-center pr-3 text-muted hover:text-ink cursor-pointer focus:outline-none"
-                  :aria-label="showPassword ? 'Sembunyikan password' : 'Tampilkan password'"
-                >
-                  <svg v-if="!showPassword" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                  </svg>
-                  <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                    <line x1="1" y1="1" x2="23" y2="23"/>
-                  </svg>
-                </button>
-              </div>
-              <p v-if="errors.password" class="form-error mt-1">{{ errors.password }}</p>
-            </div>
-
-            <!-- Tombol Submit -->
-            <button
-              type="submit"
-              :disabled="loading"
-              class="btn btn-primary w-full py-2.5 text-base flex justify-center items-center gap-2"
-            >
-              <svg v-if="loading" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-              </svg>
-              <span>{{ loading ? 'Memverifikasi...' : 'Masuk Sekarang' }}</span>
-            </button>
-          </form>
-
-          <!-- Link Sign Up -->
-          <div class="mt-6 pt-5 border-t border-border text-center text-sm text-muted">
-            Belum memiliki akun?
-            <a :href="routes.auth.signup" class="font-semibold text-primary hover:underline ml-1">
-              Daftar Akun Baru
-            </a>
-          </div>
-        </div>
-
-        <!-- Quick Demo Login -->
-        <div class="mt-6 p-4 bg-white rounded-xl border border-border shadow-xs">
-          <div class="flex items-center justify-between cursor-pointer" @click="showDemoAccounts = !showDemoAccounts">
-            <span class="text-xs font-semibold uppercase tracking-wider text-muted flex items-center gap-1.5">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <polygon points="10 8 16 12 10 16 10 8"/>
-              </svg>
-              Akun Demo Cepat (1-Klik untuk Uji Coba)
-            </span>
-            <span class="text-xs text-primary font-medium">{{ showDemoAccounts ? 'Sembunyikan' : 'Buka' }}</span>
-          </div>
-
-          <div v-show="showDemoAccounts" class="mt-3 pt-3 border-t border-border space-y-2">
-            <p class="text-xs text-muted mb-2">Klik tombol di bawah untuk langsung login dengan role terkait:</p>
-            <div class="grid grid-cols-2 gap-2 text-xs">
-              <button
-                type="button"
-                @click="fillDemo('admin@unj.ac.id', 'admin123')"
-                class="p-2 border border-border rounded-lg bg-surface hover:bg-primary-soft hover:border-primary text-left transition"
-              >
-                <div class="font-semibold text-ink">Admin</div>
-                <div class="text-muted truncate">admin@unj.ac.id</div>
-              </button>
-              <button
-                type="button"
-                @click="fillDemo('budi.santoso@unj.ac.id', 'dosen123')"
-                class="p-2 border border-border rounded-lg bg-surface hover:bg-primary-soft hover:border-primary text-left transition"
-              >
-                <div class="font-semibold text-ink">Dosen (ACC)</div>
-                <div class="text-muted truncate">budi.santoso@unj...</div>
-              </button>
-              <button
-                type="button"
-                @click="fillDemo('1234567890', 'pj123')"
-                class="p-2 border border-border rounded-lg bg-surface hover:bg-primary-soft hover:border-primary text-left transition"
-              >
-                <div class="font-semibold text-ink">PJ Kelas (Booking)</div>
-                <div class="text-muted truncate">NIM: 1234567890</div>
-              </button>
-              <button
-                type="button"
-                @click="fillDemo('2234567890', 'mhs123')"
-                class="p-2 border border-border rounded-lg bg-surface hover:bg-primary-soft hover:border-primary text-left transition"
-              >
-                <div class="font-semibold text-ink">Mahasiswa</div>
-                <div class="text-muted truncate">NIM: 2234567890</div>
-              </button>
-              <button
-                type="button"
-                @click="fillDemo('2234567893', 'mhs123')"
-                class="p-2 border border-yellow-200 rounded-lg bg-yellow-50 hover:bg-yellow-100 text-left transition"
-              >
-                <div class="font-semibold text-yellow-800">Menunggu Verif</div>
-                <div class="text-yellow-700 truncate">NIM: 2234567893</div>
-              </button>
-              <button
-                type="button"
-                @click="fillDemo('2234567894', 'mhs123')"
-                class="p-2 border border-red-200 rounded-lg bg-red-50 hover:bg-red-100 text-left transition"
-              >
-                <div class="font-semibold text-red-800">Akun Nonaktif</div>
-                <div class="text-red-700 truncate">NIM: 2234567894</div>
-              </button>
+            <div class="auth-brand-feature">
+              <span class="auth-brand-feature-icon">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              </span>
+              Reservasi & Approval Instan
             </div>
           </div>
         </div>
       </div>
-    </main>
 
-    <!-- Footer Sederhana -->
-    <footer class="py-4 text-center text-xs text-muted">
-      &copy; 2024 Universitas Negeri Jakarta &mdash; Sistem Reservasi Ruang Kelas
+      <!-- Right Form Panel -->
+      <div class="auth-form-panel">
+        <div class="auth-form-wrapper">
+          <!-- Auth Card -->
+          <div class="auth-card">
+            <!-- Header -->
+            <div class="auth-header">
+              <div class="auth-icon-wrap">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                  <polyline points="10 17 15 12 10 7"/>
+                  <line x1="15" y1="12" x2="3" y2="12"/>
+                </svg>
+              </div>
+              <h1 class="auth-title">Masuk ke Akun</h1>
+              <p class="auth-subtitle">Sistem Pemetaan & Reservasi Ruang UNJ</p>
+            </div>
+
+            <!-- Alert Error -->
+            <div v-if="errorMessage" class="auth-alert-error" role="alert">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12" stroke-linecap="round"/>
+                <line x1="12" y1="16" x2="12.01" y2="16" stroke-linecap="round"/>
+              </svg>
+              <span>{{ errorMessage }}</span>
+            </div>
+
+            <!-- Form Input -->
+            <form @submit.prevent="handleLogin" novalidate>
+              <!-- Field NIM / NIP / Email -->
+              <div class="form-group mb-4">
+                <label for="identifier" class="form-label flex justify-between items-center">
+                  <span>NIM / NIP atau Email <span class="required">*</span></span>
+                </label>
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-muted pointer-events-none">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                      <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                  </span>
+                  <input
+                    id="identifier"
+                    type="text"
+                    v-model.trim="form.identifier"
+                    class="form-input pl-10"
+                    :class="{ 'is-error': errors.identifier }"
+                    placeholder="Contoh: 1234567890 atau user@unj.ac.id"
+                    autocomplete="username"
+                    required
+                  />
+                </div>
+                <p v-if="errors.identifier" class="form-error mt-1">{{ errors.identifier }}</p>
+              </div>
+
+              <!-- Field Password -->
+              <div class="form-group mb-5">
+                <div class="flex justify-between items-center mb-1">
+                  <label for="password" class="form-label mb-0">
+                    Kata Sandi <span class="required">*</span>
+                  </label>
+                  <a :href="routes.auth.lupaPassword" class="text-xs font-semibold text-primary hover:underline">
+                    Lupa Password?
+                  </a>
+                </div>
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-muted pointer-events-none">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                  </span>
+                  <input
+                    id="password"
+                    :type="showPassword ? 'text' : 'password'"
+                    v-model="form.password"
+                    class="form-input pl-10 pr-10"
+                    :class="{ 'is-error': errors.password }"
+                    placeholder="Masukkan kata sandi Anda"
+                    autocomplete="current-password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    @click="showPassword = !showPassword"
+                    class="absolute inset-y-0 right-0 flex items-center pr-3 text-muted hover:text-ink cursor-pointer focus:outline-none"
+                    :aria-label="showPassword ? 'Sembunyikan password' : 'Tampilkan password'"
+                  >
+                    <svg v-if="!showPassword" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                      <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                  </button>
+                </div>
+                <p v-if="errors.password" class="form-error mt-1">{{ errors.password }}</p>
+              </div>
+
+              <!-- Tombol Submit -->
+              <button
+                type="submit"
+                :disabled="loading"
+                class="auth-submit-btn"
+              >
+                <svg v-if="loading" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                <span>{{ loading ? 'Memverifikasi...' : 'Masuk Sekarang' }}</span>
+              </button>
+            </form>
+
+            <!-- Link Sign Up -->
+            <div class="auth-footer-link">
+              Belum memiliki akun?
+              <a :href="routes.auth.signup">Daftar Akun Baru</a>
+            </div>
+          </div>
+
+          <!-- Quick Demo Login -->
+          <div class="auth-demo-section">
+            <div class="auth-demo-toggle" @click="showDemoAccounts = !showDemoAccounts">
+              <span class="auth-demo-label">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polygon points="10 8 16 12 10 16 10 8"/>
+                </svg>
+                Akun Demo Cepat (1-Klik)
+              </span>
+              <span class="auth-demo-toggle-text">{{ showDemoAccounts ? 'Sembunyikan' : 'Buka' }}</span>
+            </div>
+
+            <div v-show="showDemoAccounts">
+              <p class="text-xs text-muted mb-2 mt-3 pt-3 border-t border-border">Klik tombol di bawah untuk langsung login dengan role terkait:</p>
+              <div class="auth-demo-grid">
+                <button type="button" @click="fillDemo('admin@unj.ac.id', 'admin123')" class="auth-demo-btn">
+                  <span class="auth-demo-btn-name">Admin</span>
+                  <span class="auth-demo-btn-email">admin@unj.ac.id</span>
+                </button>
+                <button type="button" @click="fillDemo('budi.santoso@unj.ac.id', 'dosen123')" class="auth-demo-btn">
+                  <span class="auth-demo-btn-name">Dosen (ACC)</span>
+                  <span class="auth-demo-btn-email">budi.santoso@unj...</span>
+                </button>
+                <button type="button" @click="fillDemo('1234567890', 'pj123')" class="auth-demo-btn">
+                  <span class="auth-demo-btn-name">PJ Kelas (Booking)</span>
+                  <span class="auth-demo-btn-email">NIM: 1234567890</span>
+                </button>
+                <button type="button" @click="fillDemo('2234567890', 'mhs123')" class="auth-demo-btn">
+                  <span class="auth-demo-btn-name">Mahasiswa</span>
+                  <span class="auth-demo-btn-email">NIM: 2234567890</span>
+                </button>
+                <button type="button" @click="fillDemo('2234567893', 'mhs123')" class="auth-demo-btn auth-demo-btn--warning">
+                  <span class="auth-demo-btn-name">Menunggu Verif</span>
+                  <span class="auth-demo-btn-email">NIM: 2234567893</span>
+                </button>
+                <button type="button" @click="fillDemo('2234567894', 'mhs123')" class="auth-demo-btn auth-demo-btn--danger">
+                  <span class="auth-demo-btn-name">Akun Nonaktif</span>
+                  <span class="auth-demo-btn-email">NIM: 2234567894</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="auth-page-footer">
+      &copy; 2024 Universitas Negeri Jakarta &mdash; Sistem Informasi Pemetaan & Reservasi Ruang Kelas
     </footer>
   </div>
 

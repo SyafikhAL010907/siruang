@@ -1,126 +1,148 @@
-<!-- 🆕 TAMBAHAN -->
 <!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Menunggu Verifikasi | Reservasi Ruangan UNJ</title>
+  <title>Menunggu Verifikasi | Sistem Informasi Pemetaan & Reservasi Ruang Kelas</title>
+  <meta name="description" content="Akun menunggu verifikasi administrator pada Sistem Informasi Pemetaan & Reservasi Ruang Kelas UNJ" />
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <script src="../assets/js/core/tailwind-config.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../assets/css/global.css" />
+  <link rel="stylesheet" href="../assets/css/auth/auth-shared.css" />
   <link rel="stylesheet" href="../assets/css/auth/menunggu-verifikasi.css" />
 </head>
 <body class="bg-surface text-ink antialiased" style="font-family:'Inter',system-ui,sans-serif;">
-  <div id="app" v-cloak class="min-h-screen flex flex-col justify-between">
+  <div id="app" v-cloak class="min-h-screen flex flex-col">
     <!-- Navbar Pengunjung -->
     <app-navbar></app-navbar>
 
-    <!-- Konten Utama -->
-    <main class="flex-1 flex items-center justify-center px-4 py-8 sm:py-12">
-      <div class="w-full max-w-lg">
-        <!-- Kartu Status Verifikasi -->
-        <div class="card p-6 sm:p-8 bg-white shadow-md border border-border rounded-xl text-center">
-          <!-- Ilustrasi Status Menunggu -->
-          <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-yellow-100 text-yellow-700 mb-4 mx-auto">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <polyline points="12 6 12 12 16 14"/>
-            </svg>
-          </div>
-
-          <h1 class="text-2xl font-bold text-ink mb-2">Akun Menunggu Verifikasi</h1>
-          <p class="text-sm text-muted mb-6 leading-relaxed">
-            Terima kasih telah mendaftar. Akun Anda saat ini sedang dalam proses peninjauan dan verifikasi oleh Administrator Kampus UNJ.
+    <!-- Auth Split Layout -->
+    <div class="auth-layout">
+      <!-- Left Brand Panel (desktop only) -->
+      <div class="auth-brand-panel">
+        <div class="auth-brand-content">
+          <svg class="auth-brand-icon" viewBox="0 0 56 56" fill="none">
+            <rect width="56" height="56" rx="14" fill="rgba(255,255,255,0.12)"/>
+            <circle cx="28" cy="28" r="16" fill="rgba(255,255,255,0.15)" stroke="#FFFFFF" stroke-width="2"/>
+            <polyline points="28 18 28 28 34 32" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <h2 class="auth-brand-title">
+            Proses Verifikasi
+            <span class="auth-brand-title-accent">Akun Anda</span>
+          </h2>
+          <p class="auth-brand-subtitle">
+            Administrator kampus sedang meninjau pendaftaran Anda. Proses ini memastikan keamanan dan validitas akun.
           </p>
+        </div>
+      </div>
 
-          <!-- Kartu Rincian Akun Pengguna -->
-          <div class="p-4 bg-surface rounded-xl border border-border text-left mb-6 space-y-2.5 text-sm">
-            <div class="flex justify-between items-center py-1 border-b border-border">
-              <span class="text-muted">Nama Pengguna</span>
-              <span class="font-semibold text-ink">{{ user ? user.nama : 'Nina Sari (Demo)' }}</span>
+      <!-- Right Form Panel -->
+      <div class="auth-form-panel">
+        <div class="auth-form-wrapper auth-form-wrapper--wide">
+          <!-- Auth Card -->
+          <div class="auth-card" style="text-align: center;">
+            <!-- Verify Icon -->
+            <div class="auth-verify-icon auth-verify-icon--pending" style="display: inline-flex; margin-bottom: 1rem;">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
             </div>
-            <div class="flex justify-between items-center py-1 border-b border-border">
-              <span class="text-muted">{{ user && user.role === 'dosen' ? 'NIP' : 'NIM' }}</span>
-              <span class="font-semibold text-ink">{{ user ? user.nim_nip : '2234567893' }}</span>
-            </div>
-            <div class="flex justify-between items-center py-1 border-b border-border">
-              <span class="text-muted">Email</span>
-              <span class="font-semibold text-ink">{{ user ? user.email : 'nina.sari@mhs.unj.ac.id' }}</span>
-            </div>
-            <div class="flex justify-between items-center py-1 border-b border-border">
-              <span class="text-muted">Program Studi</span>
-              <span class="font-semibold text-ink">{{ prodiName }}</span>
-            </div>
-            <div class="flex justify-between items-center py-1 border-b border-border">
-              <span class="text-muted">Peran Pendaftaran</span>
-              <span class="badge badge-neutral capitalize font-semibold">{{ roleLabel }}</span>
-            </div>
-            <div class="flex justify-between items-center py-1">
-              <span class="text-muted">Status Akun</span>
-              <span class="badge badge-warning flex items-center gap-1">
-                <span class="inline-block w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
-                Menunggu Verifikasi
-              </span>
-            </div>
-          </div>
 
-          <!-- Aksi Utama -->
-          <div class="space-y-3">
-            <!-- Tombol Cek Status -->
-            <button
-              type="button"
-              @click="checkVerificationStatus"
-              :disabled="checking"
-              class="btn btn-primary w-full py-2.5 text-base flex justify-center items-center gap-2"
-            >
-              <svg v-if="checking" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-              </svg>
-              <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/>
-              </svg>
-              <span>{{ checking ? 'Memeriksa Status...' : 'Cek Status Verifikasi' }}</span>
-            </button>
+            <h1 class="auth-title" style="margin-bottom: 0.5rem;">Akun Menunggu Verifikasi</h1>
+            <p class="auth-subtitle" style="margin-bottom: 1.5rem; max-width: 24rem; margin-left: auto; margin-right: auto;">
+              Terima kasih telah mendaftar. Akun Anda saat ini sedang dalam proses peninjauan dan verifikasi oleh Administrator Kampus UNJ.
+            </p>
 
-            <!-- 🆕 Fitur Demo: Simulasi ACC Instan -->
-            <button
-              type="button"
-              @click="simulateInstantApproval"
-              class="btn btn-secondary w-full py-2 text-xs flex justify-center items-center gap-2 border-dashed border-primary text-primary hover:bg-primary-soft"
-              title="Khusus prototipe: simulasi verifikasi langsung oleh admin"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                <polyline points="22 4 12 14.01 9 11.01"/>
-              </svg>
-              Simulasi ACC Sekarang (Fitur Demo Prototipe)
-            </button>
+            <!-- Account Details -->
+            <div style="padding: 1rem; background: var(--color-surface); border-radius: var(--radius-lg); border: 1px solid var(--color-border); text-align: left; margin-bottom: 1.5rem;">
+              <div class="auth-verify-detail-row">
+                <span class="auth-verify-detail-label">Nama Pengguna</span>
+                <span class="auth-verify-detail-value">{{ user ? user.nama : 'Nina Sari (Demo)' }}</span>
+              </div>
+              <div class="auth-verify-detail-row">
+                <span class="auth-verify-detail-label">{{ user && user.role === 'dosen' ? 'NIP' : 'NIM' }}</span>
+                <span class="auth-verify-detail-value">{{ user ? user.nim_nip : '2234567893' }}</span>
+              </div>
+              <div class="auth-verify-detail-row">
+                <span class="auth-verify-detail-label">Email</span>
+                <span class="auth-verify-detail-value">{{ user ? user.email : 'nina.sari@mhs.unj.ac.id' }}</span>
+              </div>
+              <div class="auth-verify-detail-row">
+                <span class="auth-verify-detail-label">Program Studi</span>
+                <span class="auth-verify-detail-value">{{ prodiName }}</span>
+              </div>
+              <div class="auth-verify-detail-row">
+                <span class="auth-verify-detail-label">Peran Pendaftaran</span>
+                <span class="badge badge-neutral capitalize font-semibold">{{ roleLabel }}</span>
+              </div>
+              <div class="auth-verify-detail-row" style="border-bottom: none;">
+                <span class="auth-verify-detail-label">Status Akun</span>
+                <span class="badge badge-warning flex items-center gap-1">
+                  <span class="inline-block w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
+                  Menunggu Verifikasi
+                </span>
+              </div>
+            </div>
 
-            <!-- Tombol Keluar / Logout -->
-            <button
-              type="button"
-              @click="handleLogout"
-              class="btn btn-ghost w-full py-2 text-sm text-muted hover:text-danger flex justify-center items-center gap-1.5"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                <polyline points="16 17 21 12 16 7"/>
-                <line x1="21" y1="12" x2="9" y2="12"/>
-              </svg>
-              <span>Keluar dari Akun</span>
-            </button>
+            <!-- Action Buttons -->
+            <div style="display: flex; flex-direction: column; gap: 0.625rem;">
+              <!-- Check Status Button -->
+              <button
+                type="button"
+                @click="checkVerificationStatus"
+                :disabled="checking"
+                class="auth-submit-btn"
+              >
+                <svg v-if="checking" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/>
+                </svg>
+                <span>{{ checking ? 'Memeriksa Status...' : 'Cek Status Verifikasi' }}</span>
+              </button>
+
+              <!-- Demo: Instant Approval -->
+              <button
+                type="button"
+                @click="simulateInstantApproval"
+                class="btn btn-secondary w-full py-2 text-xs flex justify-center items-center gap-2 border-dashed border-primary text-primary hover:bg-primary-soft"
+                title="Khusus prototipe: simulasi verifikasi langsung oleh admin"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+                Simulasi ACC Sekarang (Fitur Demo Prototipe)
+              </button>
+
+              <!-- Logout -->
+              <button
+                type="button"
+                @click="handleLogout"
+                class="btn btn-ghost w-full py-2 text-sm text-muted hover:text-danger flex justify-center items-center gap-1.5"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                  <polyline points="16 17 21 12 16 7"/>
+                  <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                <span>Keluar dari Akun</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </main>
+    </div>
 
     <!-- Footer -->
-    <footer class="py-4 text-center text-xs text-muted">
-      &copy; 2024 Universitas Negeri Jakarta &mdash; Sistem Reservasi Ruang Kelas
+    <footer class="auth-page-footer">
+      &copy; 2024 Universitas Negeri Jakarta &mdash; Sistem Informasi Pemetaan & Reservasi Ruang Kelas
     </footer>
   </div>
 

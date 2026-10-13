@@ -3,265 +3,292 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Daftar Akun Baru | Reservasi Ruangan UNJ</title>
+  <title>Daftar Akun Baru | Sistem Informasi Pemetaan & Reservasi Ruang Kelas</title>
+  <meta name="description" content="Daftar akun baru untuk mengakses Sistem Informasi Pemetaan & Reservasi Ruang Kelas Universitas Negeri Jakarta" />
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   <script src="../assets/js/core/tailwind-config.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../assets/css/global.css" />
+  <link rel="stylesheet" href="../assets/css/auth/auth-shared.css" />
   <link rel="stylesheet" href="../assets/css/auth/signup.css" />
 </head>
 <body class="bg-surface text-ink antialiased" style="font-family:'Inter',system-ui,sans-serif;">
-  <div id="app" v-cloak class="min-h-screen flex flex-col justify-between">
+  <div id="app" v-cloak class="min-h-screen flex flex-col">
     <!-- Navbar Pengunjung -->
     <app-navbar></app-navbar>
 
-    <!-- Konten Pendaftaran -->
-    <main class="flex-1 flex items-center justify-center px-4 py-8 sm:py-12">
-      <div class="w-full max-w-lg">
-        <!-- Kartu Registrasi -->
-        <div class="card p-6 sm:p-8 bg-white shadow-md border border-border rounded-xl">
-          <!-- Header -->
-          <div class="text-center mb-6">
-            <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary-soft text-primary mb-3">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                <circle cx="8.5" cy="7" r="4"/>
-                <line x1="20" y1="8" x2="20" y2="14"/>
-                <line x1="23" y1="11" x2="17" y2="11"/>
-              </svg>
+    <!-- Auth Split Layout -->
+    <div class="auth-layout">
+      <!-- Left Brand Panel (desktop only) -->
+      <div class="auth-brand-panel">
+        <div class="auth-brand-content">
+          <svg class="auth-brand-icon" viewBox="0 0 56 56" fill="none">
+            <rect width="56" height="56" rx="14" fill="rgba(255,255,255,0.12)"/>
+            <path d="M14 40V20l14-8 14 8v20l-14 8-14-8z" fill="rgba(255,255,255,0.15)"/>
+            <path d="M14 40V20l14-8 14 8v20l-14 8-14-8z" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+            <path d="M28 12v36M14 20l14 8 14-8" stroke="#FFFFFF" stroke-width="1.5" opacity="0.6"/>
+          </svg>
+          <h2 class="auth-brand-title">
+            Bergabung dengan
+            <span class="auth-brand-title-accent">Sistem Reservasi UNJ</span>
+          </h2>
+          <p class="auth-brand-subtitle">
+            Daftarkan diri Anda untuk mulai memesan ruang kelas dan melihat denah interaktif kampus.
+          </p>
+          <div class="auth-brand-features">
+            <div class="auth-brand-feature">
+              <span class="auth-brand-feature-icon">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+              </span>
+              Akses untuk Mahasiswa & Dosen
             </div>
-            <h1 class="text-2xl font-bold text-ink">Pendaftaran Akun Baru</h1>
-            <p class="text-sm text-muted mt-1">Lengkapi data diri Anda untuk mengakses sistem pemetaan dan reservasi ruangan UNJ</p>
-          </div>
-
-          <!-- Alert Error Umum -->
-          <div v-if="generalError" class="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg flex items-start gap-2" role="alert">
-            <svg class="w-5 h-5 flex-shrink-0 mt-0.5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10" stroke-width="2"/>
-              <line x1="12" y1="8" x2="12" y2="12" stroke-width="2" stroke-linecap="round"/>
-              <line x1="12" y1="16" x2="12.01" y2="16" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-            <span>{{ generalError }}</span>
-          </div>
-
-          <form @submit.prevent="handleRegister" novalidate>
-            <!-- 🆕 TAMBAHAN: Pilihan Peran Pendaftaran (Mahasiswa / Dosen) -->
-            <div class="form-group mb-5">
-              <label class="form-label mb-2 block font-medium">
-                Daftar Sebagai <span class="required">*</span>
-              </label>
-              <div class="grid grid-cols-2 gap-3">
-                <label
-                  class="cursor-pointer border rounded-lg p-3 flex items-center justify-center gap-2.5 transition text-sm font-semibold select-none"
-                  :class="form.role === 'mahasiswa' ? 'border-primary bg-primary-soft text-primary shadow-xs' : 'border-border bg-white text-muted hover:border-gray-400'"
-                >
-                  <input
-                    type="radio"
-                    name="role"
-                    value="mahasiswa"
-                    v-model="form.role"
-                    class="sr-only"
-                    @change="onRoleChange"
-                  />
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-                    <path d="M6 12v5c3 3 9 3 12 0v-5"/>
-                  </svg>
-                  <span>Mahasiswa</span>
-                </label>
-
-                <label
-                  class="cursor-pointer border rounded-lg p-3 flex items-center justify-center gap-2.5 transition text-sm font-semibold select-none"
-                  :class="form.role === 'dosen' ? 'border-primary bg-primary-soft text-primary shadow-xs' : 'border-border bg-white text-muted hover:border-gray-400'"
-                >
-                  <input
-                    type="radio"
-                    name="role"
-                    value="dosen"
-                    v-model="form.role"
-                    class="sr-only"
-                    @change="onRoleChange"
-                  />
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                  </svg>
-                  <span>Dosen</span>
-                </label>
-              </div>
-              <p class="text-xs text-muted mt-1.5">
-                * Catatan: Hak akses Penanggung Jawab (PJ) dan Administrator dikelola langsung oleh Admin.
-              </p>
+            <div class="auth-brand-feature">
+              <span class="auth-brand-feature-icon">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+              </span>
+              Lihat Denah Kelas Interaktif
             </div>
-
-            <!-- Nama Lengkap -->
-            <div class="form-group mb-4">
-              <label for="nama" class="form-label">
-                Nama Lengkap (beserta gelar jika dosen) <span class="required">*</span>
-              </label>
-              <input
-                id="nama"
-                type="text"
-                v-model.trim="form.nama"
-                class="form-input"
-                :class="{ 'is-error': errors.nama }"
-                :placeholder="form.role === 'dosen' ? 'Contoh: Dr. Budi Santoso, M.T.' : 'Contoh: Ahmad Rizki Pratama'"
-                required
-              />
-              <p v-if="errors.nama" class="form-error mt-1">{{ errors.nama }}</p>
+            <div class="auth-brand-feature">
+              <span class="auth-brand-feature-icon">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              </span>
+              Verifikasi Cepat oleh Admin
             </div>
-
-            <!-- NIM / NIP Dinamis sesuai role -->
-            <div class="form-group mb-4">
-              <label for="nim_nip" class="form-label">
-                {{ form.role === 'dosen' ? 'NIP (Nomor Induk Pegawai)' : 'NIM (Nomor Induk Mahasiswa)' }}
-                <span class="required">*</span>
-              </label>
-              <input
-                id="nim_nip"
-                type="text"
-                v-model.trim="form.nim_nip"
-                class="form-input"
-                :class="{ 'is-error': errors.nim_nip }"
-                :placeholder="form.role === 'dosen' ? 'Contoh: 198501012010011001' : 'Contoh: 2234567890'"
-                required
-              />
-              <p v-if="errors.nim_nip" class="form-error mt-1">{{ errors.nim_nip }}</p>
-            </div>
-
-            <!-- Email -->
-            <div class="form-group mb-4">
-              <label for="email" class="form-label">
-                Alamat Email Aktif <span class="required">*</span>
-              </label>
-              <input
-                id="email"
-                type="email"
-                v-model.trim="form.email"
-                class="form-input"
-                :class="{ 'is-error': errors.email }"
-                :placeholder="form.role === 'dosen' ? 'nama.dosen@unj.ac.id' : 'nama.mhs@mhs.unj.ac.id'"
-                required
-              />
-              <p v-if="errors.email" class="form-error mt-1">{{ errors.email }}</p>
-            </div>
-
-            <!-- Program Studi (Dropdown dari prodi.js) -->
-            <div class="form-group mb-4">
-              <label for="prodi" class="form-label">
-                Program Studi (Rumpun Teknik Elektro) <span class="required">*</span>
-              </label>
-              <select
-                id="prodi"
-                v-model="form.prodi"
-                class="form-select"
-                :class="{ 'is-error': errors.prodi }"
-                required
-              >
-                <option value="" disabled>-- Pilih Program Studi --</option>
-                <option v-for="p in prodiList" :key="p.id" :value="p.id">
-                  {{ p.kode }} - {{ p.nama }}
-                </option>
-              </select>
-              <p v-if="errors.prodi" class="form-error mt-1">{{ errors.prodi }}</p>
-            </div>
-
-            <!-- Password -->
-            <div class="form-group mb-3">
-              <label for="password" class="form-label">
-                Kata Sandi <span class="required">*</span>
-              </label>
-              <div class="relative">
-                <input
-                  id="password"
-                  :type="showPassword ? 'text' : 'password'"
-                  v-model="form.password"
-                  class="form-input pr-10"
-                  :class="{ 'is-error': errors.password }"
-                  placeholder="Minimal 6 karakter"
-                  required
-                />
-                <button
-                  type="button"
-                  @click="showPassword = !showPassword"
-                  class="absolute inset-y-0 right-0 flex items-center pr-3 text-muted hover:text-ink cursor-pointer focus:outline-none"
-                  :aria-label="showPassword ? 'Sembunyikan password' : 'Tampilkan password'"
-                >
-                  <svg v-if="!showPassword" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                  </svg>
-                  <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                    <line x1="1" y1="1" x2="23" y2="23"/>
-                  </svg>
-                </button>
-              </div>
-              <p v-if="errors.password" class="form-error mt-1">{{ errors.password }}</p>
-
-              <!-- Indikator Kekuatan Password 🆕 -->
-              <div v-if="form.password" class="mt-2">
-                <div class="flex items-center justify-between text-xs mb-1">
-                  <span class="text-muted">Kekuatan Sandi:</span>
-                  <span class="font-semibold" :class="passwordStrengthColorClass">{{ passwordStrengthText }}</span>
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden flex">
-                  <div
-                    class="h-full transition-all duration-300"
-                    :class="passwordStrengthBarClass"
-                    :style="{ width: ((passwordScore + 1) * 20) + '%' }"
-                  ></div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Konfirmasi Password 🆕 -->
-            <div class="form-group mb-6">
-              <label for="confirmPassword" class="form-label">
-                Konfirmasi Kata Sandi <span class="required">*</span>
-              </label>
-              <input
-                id="confirmPassword"
-                :type="showPassword ? 'text' : 'password'"
-                v-model="form.confirmPassword"
-                class="form-input"
-                :class="{ 'is-error': errors.confirmPassword }"
-                placeholder="Ulangi kata sandi Anda"
-                required
-              />
-              <p v-if="errors.confirmPassword" class="form-error mt-1">{{ errors.confirmPassword }}</p>
-            </div>
-
-            <!-- Tombol Daftar -->
-            <button
-              type="submit"
-              :disabled="loading"
-              class="btn btn-primary w-full py-2.5 text-base flex justify-center items-center gap-2"
-            >
-              <svg v-if="loading" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-              </svg>
-              <span>{{ loading ? 'Mendaftarkan Akun...' : 'Daftar Sekarang' }}</span>
-            </button>
-          </form>
-
-          <!-- Sudah Punya Akun -->
-          <div class="mt-6 pt-5 border-t border-border text-center text-sm text-muted">
-            Sudah memiliki akun terdaftar?
-            <a :href="routes.auth.login" class="font-semibold text-primary hover:underline ml-1">
-              Masuk di sini
-            </a>
           </div>
         </div>
       </div>
-    </main>
+
+      <!-- Right Form Panel -->
+      <div class="auth-form-panel">
+        <div class="auth-form-wrapper auth-form-wrapper--wide">
+          <!-- Auth Card -->
+          <div class="auth-card">
+            <!-- Header -->
+            <div class="auth-header">
+              <div class="auth-icon-wrap">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="8.5" cy="7" r="4"/>
+                  <line x1="20" y1="8" x2="20" y2="14"/>
+                  <line x1="23" y1="11" x2="17" y2="11"/>
+                </svg>
+              </div>
+              <h1 class="auth-title">Pendaftaran Akun Baru</h1>
+              <p class="auth-subtitle">Lengkapi data diri Anda untuk mengakses sistem pemetaan dan reservasi ruangan UNJ</p>
+            </div>
+
+            <!-- Alert Error Umum -->
+            <div v-if="generalError" class="auth-alert-error" role="alert">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12" stroke-linecap="round"/>
+                <line x1="12" y1="16" x2="12.01" y2="16" stroke-linecap="round"/>
+              </svg>
+              <span>{{ generalError }}</span>
+            </div>
+
+            <form @submit.prevent="handleRegister" novalidate>
+              <!-- Pilihan Peran -->
+              <div class="form-group mb-5">
+                <label class="form-label mb-2 block font-medium">
+                  Daftar Sebagai <span class="required">*</span>
+                </label>
+                <div class="auth-role-selector">
+                  <label
+                    class="auth-role-option"
+                    :class="{ 'auth-role-option--active': form.role === 'mahasiswa' }"
+                  >
+                    <input type="radio" name="role" value="mahasiswa" v-model="form.role" class="sr-only" @change="onRoleChange" />
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                      <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                    </svg>
+                    <span>Mahasiswa</span>
+                  </label>
+                  <label
+                    class="auth-role-option"
+                    :class="{ 'auth-role-option--active': form.role === 'dosen' }"
+                  >
+                    <input type="radio" name="role" value="dosen" v-model="form.role" class="sr-only" @change="onRoleChange" />
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                    </svg>
+                    <span>Dosen</span>
+                  </label>
+                </div>
+                <p class="text-xs text-muted mt-1.5">
+                  * Catatan: Hak akses Penanggung Jawab (PJ) dan Administrator dikelola langsung oleh Admin.
+                </p>
+              </div>
+
+              <!-- Nama Lengkap -->
+              <div class="form-group mb-4">
+                <label for="nama" class="form-label">
+                  Nama Lengkap (beserta gelar jika dosen) <span class="required">*</span>
+                </label>
+                <input
+                  id="nama"
+                  type="text"
+                  v-model.trim="form.nama"
+                  class="form-input"
+                  :class="{ 'is-error': errors.nama }"
+                  :placeholder="form.role === 'dosen' ? 'Contoh: Dr. Budi Santoso, M.T.' : 'Contoh: Ahmad Rizki Pratama'"
+                  required
+                />
+                <p v-if="errors.nama" class="form-error mt-1">{{ errors.nama }}</p>
+              </div>
+
+              <!-- NIM / NIP -->
+              <div class="form-group mb-4">
+                <label for="nim_nip" class="form-label">
+                  {{ form.role === 'dosen' ? 'NIP (Nomor Induk Pegawai)' : 'NIM (Nomor Induk Mahasiswa)' }}
+                  <span class="required">*</span>
+                </label>
+                <input
+                  id="nim_nip"
+                  type="text"
+                  v-model.trim="form.nim_nip"
+                  class="form-input"
+                  :class="{ 'is-error': errors.nim_nip }"
+                  :placeholder="form.role === 'dosen' ? 'Contoh: 198501012010011001' : 'Contoh: 2234567890'"
+                  required
+                />
+                <p v-if="errors.nim_nip" class="form-error mt-1">{{ errors.nim_nip }}</p>
+              </div>
+
+              <!-- Email -->
+              <div class="form-group mb-4">
+                <label for="email" class="form-label">
+                  Alamat Email Aktif <span class="required">*</span>
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  v-model.trim="form.email"
+                  class="form-input"
+                  :class="{ 'is-error': errors.email }"
+                  :placeholder="form.role === 'dosen' ? 'nama.dosen@unj.ac.id' : 'nama.mhs@mhs.unj.ac.id'"
+                  required
+                />
+                <p v-if="errors.email" class="form-error mt-1">{{ errors.email }}</p>
+              </div>
+
+              <!-- Program Studi -->
+              <div class="form-group mb-4">
+                <label for="prodi" class="form-label">
+                  Program Studi (Rumpun Teknik Elektro) <span class="required">*</span>
+                </label>
+                <select
+                  id="prodi"
+                  v-model="form.prodi"
+                  class="form-select"
+                  :class="{ 'is-error': errors.prodi }"
+                  required
+                >
+                  <option value="" disabled>-- Pilih Program Studi --</option>
+                  <option v-for="p in prodiList" :key="p.id" :value="p.id">
+                    {{ p.kode }} - {{ p.nama }}
+                  </option>
+                </select>
+                <p v-if="errors.prodi" class="form-error mt-1">{{ errors.prodi }}</p>
+              </div>
+
+              <!-- Password -->
+              <div class="form-group mb-3">
+                <label for="password" class="form-label">
+                  Kata Sandi <span class="required">*</span>
+                </label>
+                <div class="relative">
+                  <input
+                    id="password"
+                    :type="showPassword ? 'text' : 'password'"
+                    v-model="form.password"
+                    class="form-input pr-10"
+                    :class="{ 'is-error': errors.password }"
+                    placeholder="Minimal 6 karakter"
+                    required
+                  />
+                  <button
+                    type="button"
+                    @click="showPassword = !showPassword"
+                    class="absolute inset-y-0 right-0 flex items-center pr-3 text-muted hover:text-ink cursor-pointer focus:outline-none"
+                    :aria-label="showPassword ? 'Sembunyikan password' : 'Tampilkan password'"
+                  >
+                    <svg v-if="!showPassword" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                      <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                  </button>
+                </div>
+                <p v-if="errors.password" class="form-error mt-1">{{ errors.password }}</p>
+
+                <!-- Password Strength Indicator -->
+                <div v-if="form.password" class="auth-pw-strength">
+                  <div class="auth-pw-strength-header">
+                    <span class="auth-pw-strength-label">Kekuatan Sandi:</span>
+                    <span class="font-semibold" :class="passwordStrengthColorClass">{{ passwordStrengthText }}</span>
+                  </div>
+                  <div class="auth-pw-strength-bar">
+                    <div
+                      class="auth-pw-strength-fill"
+                      :class="passwordStrengthBarClass"
+                      :style="{ width: ((passwordScore + 1) * 20) + '%' }"
+                    ></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Konfirmasi Password -->
+              <div class="form-group mb-6">
+                <label for="confirmPassword" class="form-label">
+                  Konfirmasi Kata Sandi <span class="required">*</span>
+                </label>
+                <input
+                  id="confirmPassword"
+                  :type="showPassword ? 'text' : 'password'"
+                  v-model="form.confirmPassword"
+                  class="form-input"
+                  :class="{ 'is-error': errors.confirmPassword }"
+                  placeholder="Ulangi kata sandi Anda"
+                  required
+                />
+                <p v-if="errors.confirmPassword" class="form-error mt-1">{{ errors.confirmPassword }}</p>
+              </div>
+
+              <!-- Tombol Daftar -->
+              <button
+                type="submit"
+                :disabled="loading"
+                class="auth-submit-btn"
+              >
+                <svg v-if="loading" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                <span>{{ loading ? 'Mendaftarkan Akun...' : 'Daftar Sekarang' }}</span>
+              </button>
+            </form>
+
+            <!-- Sudah Punya Akun -->
+            <div class="auth-footer-link">
+              Sudah memiliki akun terdaftar?
+              <a :href="routes.auth.login">Masuk di sini</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Footer -->
-    <footer class="py-4 text-center text-xs text-muted">
-      &copy; 2024 Universitas Negeri Jakarta &mdash; Sistem Reservasi Ruang Kelas
+    <footer class="auth-page-footer">
+      &copy; 2024 Universitas Negeri Jakarta &mdash; Sistem Informasi Pemetaan & Reservasi Ruang Kelas
     </footer>
   </div>
 
